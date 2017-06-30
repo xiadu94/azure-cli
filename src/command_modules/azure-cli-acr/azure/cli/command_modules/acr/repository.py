@@ -254,6 +254,49 @@ def acr_repository_show_manifests(registry_name,
     )
 
 
+def acr_repository_purge(registry_name,
+                         repository,
+                         resource_group_name=None,
+                         username=None,
+                         password=None,
+                         yes=False):
+    """Deletes all manifests that are not referenced by any tag from the given repository.
+    :param str registry_name: The name of container registry
+    :param str repository: The name of repository to delete
+    :param str resource_group_name: The name of resource group
+    :param str username: The username used to log into the container registry
+    :param str password: The password used to log into the container registry
+    """
+    _, resource_group_name = registry_sku_validation(
+        registry_name, resource_group_name, DELETE_NOT_SUPPORTED)
+
+    manifests = acr_repository_show_manifests(registry_name, repository)
+    filter_by_empty_tags = [x['digest'] for x in manifests if not x['tags']]
+
+    if not filter_by_empty_tags:
+        logger.warning("All manifests are referenced by at least one tag.")
+        return
+
+    message = "This operation will delete all the following manifests: {}".format(
+        ", ".join(["'{}'".format(str(x)) for x in filter_by_empty_tags])
+    )
+
+    _user_confirmation("{}.\nAre you sure you want to continue?".format(message), yes)
+
+    for manifest in filter_by_empty_tags:
+        _validate_user_credentials(
+            registry_name=registry_name,
+            resource_group_name=resource_group_name,
+            path='/v2/{}/manifests/{}'.format(repository, manifest),
+            username=username,
+            password=password,
+            repository=repository,
+            result_index=None,
+            request_method=_delete_data_from_registry
+        )
+        logger.warning("Successfully deleted manifest: %s.", manifest)
+
+
 def acr_repository_delete(registry_name,
                           repository,
                           tag=None,
@@ -282,7 +325,7 @@ def acr_repository_delete(registry_name,
                                "and all images under it?".format(repository), yes)
             path = '/v2/_acr/{}/repository'.format(repository)
         else:
-            _user_confirmation("Are you sure you want to delete the image '{}:{}'?".format(repository, tag), yes)
+            _user_confirmation("Are you sure you want to delete the tag '{}:{}'?".format(repository, tag), yes)
             path = '/v2/_acr/{}/tags/{}'.format(repository, tag)
     # If --manifest is specified as a flag
     elif not manifest:
@@ -343,7 +386,7 @@ def _delete_manifest_confirmation(yes, registry_name, repository, manifest, tag)
             raise CLIError("More than one manifests can be found with digest '{}'.".format(manifest))
 
     message = "This operation will delete the manifest '{}'".format(manifest)
-    images = "', '".join(["'{}:{}'".format(repository, str(x)) for x in tags])
+    images = ", ".join(["'{}:{}'".format(repository, str(x)) for x in tags])
     if images:
         message += " and all the following images: {}".format(images)
     _user_confirmation("{}.\nAre you sure you want to continue?".format(message))

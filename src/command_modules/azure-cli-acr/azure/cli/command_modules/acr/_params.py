@@ -38,7 +38,7 @@ register_cli_argument('acr', 'username', options_list=('--username', '-u'), help
 register_cli_argument('acr', 'password', options_list=('--password', '-p'), help='The password used to log into a container registry')
 
 register_cli_argument('acr repository delete', 'manifest', nargs='?', required=False, const='', default=None, help='The sha256 based digest of manifest to delete')
-register_cli_argument('acr repository delete', 'yes', options_list=('--yes', '-y'), action='store_true', help='Do not prompt for confirmation')
+register_cli_argument('acr repository', 'yes', options_list=('--yes', '-y'), action='store_true', help='Do not prompt for confirmation')
 
 register_cli_argument('acr create', 'registry_name', completer=None, validator=validate_registry_name)
 register_cli_argument('acr create', 'deployment_name', deployment_name_type, validator=None)
