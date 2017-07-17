@@ -10,7 +10,7 @@
             "program": "${workspaceRoot}/src/azure-cli/azure/cli/__main__.py",
             "cwd": "${workspaceRoot}",
             "args": [
-                "--help"
+                "acr build definition create -n testdefinition -r sajay -g sajayaAdminTest"
             ],
             "console": "integratedTerminal",
             "debugOptions": [

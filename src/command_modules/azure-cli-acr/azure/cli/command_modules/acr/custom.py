@@ -170,3 +170,5 @@ def acr_login(registry_name):
     registry, _ = get_registry_by_name(registry_name)
     login_server = registry.login_server #pylint: disable=no-member
     docker_login_to_registry(login_server)
+
+

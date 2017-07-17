@@ -47,3 +47,7 @@ register_cli_argument('acr create', 'registry_name', completer=None,
 register_cli_argument('acr create', 'resource_group_name',
                       validator=validate_resource_group_name)
 register_cli_argument('acr check-name', 'registry_name', completer=None)
+register_cli_argument('acr build', 'build_definition_name', completer=None,
+                      options_list=('--name', '-n'))
+register_cli_argument('acr build', 'registry_name', completer=None,
+                      options_list=('--registry', '-r'))

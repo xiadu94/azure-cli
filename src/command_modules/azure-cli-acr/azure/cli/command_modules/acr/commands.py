@@ -31,3 +31,7 @@ cli_generic_update_command(__name__,
 
 cli_command(__name__, 'acr repository list', 'azure.cli.command_modules.acr.repository#acr_repository_list')
 cli_command(__name__, 'acr repository show-tags', 'azure.cli.command_modules.acr.repository#acr_repository_show_tags')
+cli_command(__name__, 'acr build trigger', 'azure.cli.command_modules.acr.build#acr_build_trigger')
+cli_command(__name__, 'acr build definition create', 'azure.cli.command_modules.acr.build#acr_build_definition_create')
+cli_command(__name__, 'acr build definition show', 'azure.cli.command_modules.acr.build#acr_build_definition_show')
+cli_command(__name__, 'acr build definition delete', 'azure.cli.command_modules.acr.build#acr_build_definition_delete')
