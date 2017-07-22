@@ -17,6 +17,9 @@ cli_command(__name__, 'acr credential show',
 cli_command(__name__, 'acr credential renew',
             'azure.cli.command_modules.acr.credential#acr_credential_renew',
             table_transformer=output_format)
+cli_command(__name__, 'acr credential get-authorization-token',
+            'azure.cli.command_modules.acr.credential#acr_credential_getauthorizationtoken',
+            table_transformer=output_format)
 
 cli_command(__name__, 'acr check-name', 'azure.cli.command_modules.acr.custom#acr_check_name')
 cli_command(__name__, 'acr list', 'azure.cli.command_modules.acr.custom#acr_list',
