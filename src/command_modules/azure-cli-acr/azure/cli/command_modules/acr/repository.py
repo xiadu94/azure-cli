@@ -24,6 +24,7 @@ logger = get_logger(__name__)
 UNTAG_NOT_SUPPORTED = 'Untag is only supported for managed registries.'
 DELETE_NOT_SUPPORTED = 'Delete is only supported for managed registries.'
 LIST_MANIFESTS_NOT_SUPPORTED = 'List manifests is only supported for managed registries.'
+ERROR_MESSAGE = 'Please try again later or contact ACR Support <acrsup@microsoft.com>.'
 
 
 def _get_basic_auth_str(username, password):
@@ -51,6 +52,15 @@ def _get_authorization_header(username, password):
 
 def _get_pagination_params(count):
     return {'n': count}
+
+
+def _parse_error_message(error_message, response):
+    print(response)
+    try:
+        correlation_id = response.headers['x-ms-correlation-request-id']
+        return '{} {} Correlation ID: {}.'.format(error_message, ERROR_MESSAGE, correlation_id)
+    except:  # pylint: disable=bare-except
+        return '{} {}'.format(error_message, ERROR_MESSAGE)
 
 
 def _delete_data_from_registry(login_server, path, username, password, retry_times=3, retry_interval=5):
@@ -98,7 +108,7 @@ def _get_manifest_digest(login_server, path, username, password, retry_times=3, 
             elif response.status_code == 401 or response.status_code == 404:
                 raise CLIError(response.text)
             else:
-                raise Exception(response.text)
+                raise Exception(_parse_error_message('Could not get manifest digest.', response))
         except CLIError:
             raise
         except Exception as e:  # pylint: disable=broad-except
@@ -254,6 +264,39 @@ def acr_repository_untag(cmd,
         path='/v2/_acr/{}/tags/{}'.format(repository, tag),
         username=username,
         password=password)
+
+
+def acr_repository_show_digest(cmd,
+                               registry_name,
+                               image,
+                               resource_group_name=None,
+                               username=None,
+                               password=None):
+    _, resource_group_name = validate_managed_registry(
+        cmd.cli_ctx, registry_name, resource_group_name, UNTAG_NOT_SUPPORTED)
+
+    repository, tag, _ = _parse_image_name(image)
+
+    login_server, username, password = get_access_credentials(
+        cli_ctx=cmd.cli_ctx,
+        registry_name=registry_name,
+        resource_group_name=resource_group_name,
+        username=username,
+        password=password,
+        repository=repository,
+        permission='*')
+
+    repository, tag, _ = _parse_image_name(image, allow_digest=False)
+    manifest = _get_manifest_digest(
+        login_server=login_server,
+        path='/v2/{}/manifests/{}'.format(repository, tag),
+        username=username,
+        password=password)
+
+    return {
+        "image": image,
+        "manifest-digest": manifest
+    }
 
 
 def acr_repository_delete(cmd,
