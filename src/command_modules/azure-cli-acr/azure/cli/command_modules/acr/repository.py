@@ -55,7 +55,6 @@ def _get_pagination_params(count):
 
 
 def _parse_error_message(error_message, response):
-    print(response)
     try:
         correlation_id = response.headers['x-ms-correlation-request-id']
         return '{} {} Correlation ID: {}.'.format(error_message, ERROR_MESSAGE, correlation_id)
@@ -89,8 +88,9 @@ def _delete_data_from_registry(login_server, path, username, password, retry_tim
     if errorMessage:
         raise CLIError(errorMessage)
 
-
-def _get_manifest_digest(login_server, path, username, password, retry_times=3, retry_interval=5):  # pylint: disable=inconsistent-return-statements
+# pylint: disable=inconsistent-return-statements
+def _get_manifest_digest(login_server, repository, tag, username, password, retry_times=3, retry_interval=5):
+    path = '/v2/{}/manifests/{}'.format(repository, tag)
     for i in range(0, retry_times):
         errorMessage = None
         try:
@@ -105,8 +105,10 @@ def _get_manifest_digest(login_server, path, username, password, retry_times=3, 
 
             if response.status_code == 200 and response.headers and 'Docker-Content-Digest' in response.headers:
                 return response.headers['Docker-Content-Digest']
-            elif response.status_code == 401 or response.status_code == 404:
+            elif response.status_code == 401:
                 raise CLIError(response.text)
+            elif response.status_code == 404:
+                raise CLIError("Could not find image '{}:{}'.".format(repository, tag))
             else:
                 raise Exception(_parse_error_message('Could not get manifest digest.', response))
         except CLIError:
@@ -289,7 +291,8 @@ def acr_repository_show_digest(cmd,
     repository, tag, _ = _parse_image_name(image, allow_digest=False)
     manifest = _get_manifest_digest(
         login_server=login_server,
-        path='/v2/{}/manifests/{}'.format(repository, tag),
+        repository=repository,
+        tag=tag,
         username=username,
         password=password)
 
@@ -483,7 +486,8 @@ def _delete_manifest_confirmation(login_server,
     # Always query manifest if it is empty
     manifest = manifest or _get_manifest_digest(
         login_server=login_server,
-        path='/v2/{}/manifests/{}'.format(repository, tag),
+        repository=repository,
+        tag=tag,
         username=username,
         password=password)
 
