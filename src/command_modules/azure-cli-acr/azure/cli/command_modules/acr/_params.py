@@ -80,6 +80,9 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         c.argument('no_logs', help="Do not show logs after successfully queuing the build.", action='store_true')
         c.argument('os_type', options_list=['--os'], help='The operating system type required for the build.', arg_type=get_enum_type(OsType))
 
+    with self.argument_context('acr login') as c:
+        c.argument('custom_domain', help='The custom domain used to login into a container registry.')
+
     with self.argument_context('acr import') as c:
         c.argument('source', help="The source identifier in the format '[registry.azurecr.io/]repository[:tag]' or '[registry.azurecr.io/]repository@digest'.")
         c.argument('source_registry', options_list=['--registry', '-r'], help='The source container registry can be name, login server or resource ID of the source registry.')

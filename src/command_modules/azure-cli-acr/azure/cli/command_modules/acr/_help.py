@@ -121,6 +121,9 @@ helps['acr login'] = """
         - name: Log in to a container registry
           text: >
             az acr login -n MyRegistry
+        - name: Log in to a container registry using a custom domain
+          text: >
+            az acr login -n MyRegistry --custom-domain registry.contoso.com
 """
 
 helps['acr show-usage'] = """
