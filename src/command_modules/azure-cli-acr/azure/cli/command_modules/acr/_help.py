@@ -50,7 +50,7 @@ helps['acr build-task'] = """
 # TODO: Update help for all task commands
 helps['acr task'] = """
     type: group
-    short-summary: Manage tasks, which can be triggered by git commits or base image updates. 
+    short-summary: Provides capabilities to perform more than simple container builds.
     """
 
 helps['acr check-name'] = """
@@ -405,9 +405,12 @@ helps['acr task create'] = """
     type: command
     short-summary: Creates a new task which can be triggered by git commits or base image updates.
     examples:
-        - name: Create a task which updates on git commits and base image updates.
+        - name: Create a docker build task
           text: >
-            az acr task create -t helloworld:{{.Run.ID}} -n helloworld -r myRegistry -c https://github.com/Azure-Samples/acr-build-helloworld-node --git-access-token 0000000000000000000000000000000000000000
+            az acr task create -t helloworld:{{.Run.ID}} -n helloworld -r myRegistry -c https://github.com/Azure-Samples/acr-build-helloworld-node.git --git-access-token 0000000000000000000000000000000000000000 -f Dockerfile
+        - name: Create a task using task and values file.
+          text: >
+            az acr task create -n helloworld -r myRegistry -c https://github.com/AzureCR/acr-task.git --git-access-token 0000000000000000000000000000000000000000 -f ./examples/templating/acb.yaml --values ./examples/templating/prod-values.yaml
 """
 
 helps['acr task show'] = """
@@ -445,9 +448,9 @@ helps['acr task update'] = """
     type: command
     short-summary: Update a task for a container registry.
     examples:
-        - name: Update the git access token for a task in a container registry.
+        - name: Update cpu count and status of a task in a container registry.
           text: >
-            az acr task update -n MyTask -r MyRegistry --git-access-token 0000000000000000000000000000000000000000
+            az acr task update -n MyTask -r MyRegistry --cpu 2 --status Disabled
 """
 
 helps['acr task list-runs'] = """
@@ -479,7 +482,7 @@ helps['acr task show-run'] = """
 
 helps['acr task run'] = """
     type: command
-    short-summary: Trigger a task that might otherwise be waiting for git commits or base image update triggers.
+    short-summary: Manually trigger a task that might otherwise be waiting for git commits or base image update triggers.
     examples:
         - name: Trigger a task.
           text: >
