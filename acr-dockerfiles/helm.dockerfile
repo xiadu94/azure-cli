@@ -1,4 +1,4 @@
-FROM azurecr/azure-cli:helmbase
+FROM azuresdk/azure-cli-python:dev 
 
 # Enable SSL
 RUN apk --update add ca-certificates wget python curl tar
