@@ -4,13 +4,18 @@
 # --------------------------------------------------------------------------------------------
 
 from azure.cli.core.util import CLIError
+from knack.log import get_logger
 
 from azure.mgmt.containerregistry.v2018_09_01.models import ReplicationUpdateParameters
 
 from ._utils import (
     get_resource_group_name_by_registry_name,
-    validate_premium_registry
+    validate_premium_registry,
+    POLL_NO_PERMISSION_MESSAGE
 )
+
+
+logger = get_logger(__name__)
 
 
 REPLICATIONS_NOT_SUPPORTED = 'Replications are only supported for managed registries in Premium SKU.'
@@ -56,7 +61,20 @@ def acr_replication_delete(cmd,
                            resource_group_name=None):
     _, resource_group_name = validate_premium_registry(
         cmd.cli_ctx, registry_name, resource_group_name, REPLICATIONS_NOT_SUPPORTED)
-    return client.delete(resource_group_name, registry_name, replication_name)
+    try:
+        from azure.cli.core.commands import LongRunningOperation
+        LongRunningOperation(cmd.cli_ctx)(
+            client.delete(resource_group_name, registry_name, replication_name))
+    except CLIError as e:
+        try:
+            if e.response.status_code == 403 and POLL_NO_PERMISSION_MESSAGE in e.response.json()['error']['message']:
+                logger.warning("The request is accepted by the service, but you don't have permission to poll status."
+                               "\nYou may run 'az acr replication show -g %s -r %s -n %s' to get the resource status.",
+                               resource_group_name, registry_name, replication_name)
+                return
+        except:  # pylint: disable=bare-except
+            pass
+        raise e
 
 
 def acr_replication_show(cmd,
