@@ -43,6 +43,7 @@ logger = get_logger(__name__)
 
 
 TASK_NOT_SUPPORTED = 'Task is only supported for managed registries.'
+DEFAULT_TRIGGER_TYPE = SourceTriggerEvent.commit.value
 DEFAULT_TOKEN_TYPE = 'PAT'
 
 DEFAULT_TIMEOUT_IN_SEC = 60 * 60  # 60 minutes
@@ -290,7 +291,7 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
         else:
             source_control_type = SourceControlType.visual_studio_team_service.value
 
-    # update trigger
+    # update trigger moved to trigger group
     source_trigger_update_params = None
     base_image_trigger_update_params = None
     if task.trigger:
@@ -345,6 +346,89 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
 
     return client.update(resource_group_name, registry_name, task_name, taskUpdateParameters)
 
+
+def acr_task_trigger(cmd,  # pylint: disable=too-many-locals
+                     client,
+                     task_name,
+                     registry_name,
+                     resource_group_name=None,
+                     # task parameters
+                     status=None,
+                     os_type=None,
+                     cpu=None,
+                     timeout=None,
+                     context_path=None,
+                     trigger_type=None,
+                     git_access_token=None,
+                     branch=None,
+                     base_image_trigger_name='defaultBaseimageTriggerName',
+                     base_image_trigger_enabled=None,
+                     base_image_trigger_type=None):
+    _, resource_group_name = validate_managed_registry(
+        cmd.cli_ctx, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
+    if trigger_type is not None and not _is_valid_trigger_type(trigger_type):
+        raise CLIError("Invalid trigger type. "
+                       "[--type commit] | [--type pullrequest]")
+    task = client.get(resource_group_name, registry_name, task_name)
+    step = task.step
+
+    source_control_type = None
+    if context_path:
+        if 'GITHUB.COM' in context_path.upper():
+            source_control_type = SourceControlType.github.value
+        else:
+            source_control_type = SourceControlType.visual_studio_team_service.value
+
+    # update triggers
+    source_trigger_update_params = None
+    base_image_trigger_update_params = None
+    # task.trigger.source_trigger will always be true since we create default source trigger in task create
+    if task.trigger:
+        source_triggers = task.trigger.source_triggers
+        base_image_trigger = task.trigger.base_image_trigger
+        if trigger_type or source_triggers:
+            source_trigger_update_params = [
+                SourceTriggerUpdateParameters(
+                    source_repository=SourceUpdateParameters(
+                        source_control_type=source_control_type,
+                        repository_url=context_path,
+                        branch=branch,
+                        source_control_auth_properties=AuthInfoUpdateParameters(
+                            token=git_access_token,
+                            token_type=DEFAULT_TOKEN_TYPE
+                        )
+                    ),
+                    source_trigger_events=trigger_type,
+                    status=status,
+                    name=source_triggers[0].name if source_triggers else "defaultSourceTriggerName"
+                )
+            ]
+
+        if base_image_trigger_enabled or base_image_trigger is not None:
+            status = None
+            if base_image_trigger_enabled is not None:
+                status = TriggerStatus.enabled.value if base_image_trigger_enabled else TriggerStatus.disabled.value
+            base_image_trigger_update_params = BaseImageTriggerUpdateParameters(
+                base_image_trigger_type=base_image_trigger_type,
+                status=status,
+                name=base_image_trigger.name if base_image_trigger else "defaultBaseimageTriggerName"
+            )
+
+    taskUpdateParameters = TaskUpdateParameters(
+        status=status,
+        platform=PlatformUpdateParameters(
+            os=os_type
+        ),
+        agent_configuration=AgentProperties(
+            cpu=cpu
+        ),
+        timeout=timeout,
+        step=step,
+        trigger=TriggerUpdateParameters(
+            source_triggers=source_trigger_update_params,
+            base_image_trigger=base_image_trigger_update_params
+        )
+    )
 
 def acr_task_update_run(cmd,
                         client,
@@ -505,25 +589,10 @@ def _get_list_runs_message(base_message, task_name=None, image=None):
     return "{}.".format(base_message)
 
 
-def _get_trigger_event_list(source_triggers,
-                            commit_trigger_enabled=None,
-                            pull_request_trigger_enabled=None):
-    source_trigger_events = set()
-    # perform merge with server-side event list
-    if source_triggers:
-        source_trigger_events = set(source_triggers[0].source_trigger_events)
-        if source_triggers[0].status == TriggerStatus.disabled.value:
-            source_trigger_events.clear()
-    if commit_trigger_enabled is not None:
-        if commit_trigger_enabled:
-            source_trigger_events.add(SourceTriggerEvent.commit.value)
-        else:
-            if SourceTriggerEvent.commit.value in source_trigger_events:
-                source_trigger_events.remove(SourceTriggerEvent.commit.value)
-    if pull_request_trigger_enabled is not None:
-        if pull_request_trigger_enabled:
-            source_trigger_events.add(SourceTriggerEvent.pullrequest.value)
-        else:
-            if SourceTriggerEvent.pullrequest.value in source_trigger_events:
-                source_trigger_events.remove(SourceTriggerEvent.pullrequest.value)
-    return source_trigger_events
+def _is_valid_trigger_type(trigger_type):
+    if trigger_type:
+        if trigger_type.lower() == SourceTriggerEvent.commit.value:
+            return True
+        if trigger_type.lower() == SourceTriggerEvent.pullrequest.value:
+            return True
+    return False

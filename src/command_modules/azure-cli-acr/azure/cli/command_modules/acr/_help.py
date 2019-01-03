@@ -426,18 +426,12 @@ helps['acr task create'] = """
     type: command
     short-summary: Creates a series of steps for building, testing and OS & Framework patching containers. Tasks support triggers from git commits and base image updates.
     examples:
-        - name: Create a Linux task from a public GitHub repository which builds the hello-world image without triggers
+        - name: Create a task that builds hello-world, without triggers
           text: >
-            az acr task create -t hello-world:{{.Run.ID}} -n hello-world -r MyRegistry -c https://github.com/Azure-Samples/acr-build-helloworld-node.git -f Dockerfile --commit-trigger-enabled false --pull-request-trigger-enabled false
-        - name: Create a Linux task using a private GitHub repository which builds the hello-world image without triggers
-          text: >
-            az acr task create -t hello-world:{{.Run.ID}} -n hello-world -r MyRegistry -c https://github.com/Azure-Samples/acr-build-helloworld-node.git -f Dockerfile --commit-trigger-enabled false --pull-request-trigger-enabled false --git-access-token 0000000000000000000000000000000000000000
-        - name: Create a Linux task from a public GitHub repository which builds the hello-world image with a git commit trigger
+            az acr task create -t hello-world:{{.Run.ID}} -n hello-world -r MyRegistry -c https://github.com/Azure-Samples/acr-build-helloworld-node.git -f Dockerfile  --commit-trigger-enabled false
+        - name: Create a task that builds hello-world, with git commit webhook based triggers
           text: >
             az acr task create -t hello-world:{{.Run.ID}} -n hello-world -r MyRegistry -c https://github.com/Azure-Samples/acr-build-helloworld-node.git -f Dockerfile --git-access-token 0000000000000000000000000000000000000000
-        - name: Create a Windows task from a public GitHub repository which builds the Azure Container Builder image.
-          text: >
-            az acr task create -t acb:{{.Run.ID}} -n acb-win -r MyRegistry -c https://github.com/Azure/acr-builder.git -f Windows.Dockerfile --commit-trigger-enabled false --pull-request-trigger-enabled false --os Windows
 """
 
 helps['acr task show'] = """
@@ -478,6 +472,15 @@ helps['acr task update'] = """
         - name: Update base image updates to trigger on all dependent images of a multi-stage dockerfile, and status of a task in an Azure Container Registry.
           text: >
             az acr task update -n MyTask -r MyRegistry --base-image-trigger All --status Disabled
+"""
+
+helps['acr task trigger'] = """
+    type: command
+    short-summary: Manage the source control and base image update triggers for a task.
+    examples:
+        - name: Trigger a task from git pull requests.
+          text: >
+            az acr task trigger -n MyTask -r MyRegistry --type pullrequest
 """
 
 helps['acr task list-runs'] = """
@@ -554,23 +557,20 @@ helps['acr task logs'] = """
 
 helps['acr build'] = """
     type: command
-    short-summary: Queues a quick build, providing streaming logs for an Azure Container Registry.
+    short-summary: Queues a quick build, providing streamed logs for an Azure Container Registry.
     examples:
-        - name: Queue a local context as a Linux build, tag it, and push it to the registry.
+        - name: Queue a local context (folder), pushed to ACR when complete, with streaming logs.
           text: >
             az acr build -t sample/hello-world:{{.Run.ID}} -r MyRegistry .
-        - name: Queue a local context as a Linux build, tag it, and push it to the registry without streaming logs.
+        - name: Queue a local context, pushed to ACR without streaming logs.
           text: >
             az acr build -t sample/hello-world:{{.Run.ID}} -r MyRegistry --no-logs .
-        - name: Queue a local context as a Linux build without pushing it to the registry.
+        - name: Queue a local context to validate a build is successful, without pushing to the registry using the --no-push parameter.
           text: >
             az acr build -t sample/hello-world:{{.Run.ID}} -r MyRegistry --no-push .
-        - name: Queue a local context as a Linux build without pushing it to the registry.
+        - name: Queue a local context to validate a build is successful, without pushing to the registry. Removing the -t parameter defaults to --no-push
           text: >
             az acr build -r MyRegistry .
-        - name: Queue a remote GitHub context as a Windows build, tag it, and push it to the registry.
-          text: >
-            az acr build -r MyRegistry https://github.com/Azure/acr-builder.git -f Windows.Dockerfile --os Windows
 """
 
 helps['acr build-task create'] = """
@@ -697,9 +697,6 @@ helps['acr import'] = """
         - name: Import an image from a registry in a different subscription.
           text: >
             az acr import -n MyRegistry --source sourcerepository:sourcetag -t targetrepository:targettag -r /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/sourceResourceGroup/providers/Microsoft.ContainerRegistry/registries/sourceRegistry
-        - name: Import an image from a public repository in Docker Hub
-          text: >
-            az acr import -n MyRegistry --source docker.io/sourcerepository:sourcetag -t targetrepository:targettag
 """
 
 helps['acr helm list'] = """
