@@ -152,8 +152,8 @@ def _get_credentials(cli_ctx,
         login_server = registry.login_server
         if tenant_suffix:
             logger.warning(
-                "Obtained registry login server from service. The specified suffix '%s' is ignored.",
-                tenant_suffix)
+                "Obtained registry login server '%s' from service. The specified suffix '%s' is ignored.",
+                login_server, tenant_suffix)
     except ResourceNotFound as e:
         # Try to use the pre-defined login server suffix to construct login server from registry name.
         login_server_suffix = get_login_server_suffix(cli_ctx)
