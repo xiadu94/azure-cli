@@ -257,6 +257,36 @@ def acr_repository_show_manifests(cmd,
     return raw_result
 
 
+def acr_repository_inspect(cmd,
+                           registry_name,
+                           image,
+                           tenant_suffix=None,
+                           username=None,
+                           password=None):
+    try:
+        validate_managed_registry(cmd.cli_ctx, registry_name, None, SHOW_MANIFESTS_NOT_SUPPORTED)
+    except ResourceNotFound:
+        pass
+
+    repository, tag, manifest = _parse_image_name(image, allow_digest=True)
+
+    login_server, username, password = get_access_credentials(
+        cli_ctx=cmd.cli_ctx,
+        registry_name=registry_name,
+        tenant_suffix=tenant_suffix,
+        username=username,
+        password=password,
+        repository=repository,
+        permission='pull')
+
+    return request_data_from_registry(
+        http_method='get',
+        login_server=login_server,
+        path='/v2/{}/manifests/{}'.format(repository, tag or manifest),
+        username=username,
+        password=password)[0]
+
+
 def acr_repository_show(cmd,
                         registry_name,
                         repository=None,

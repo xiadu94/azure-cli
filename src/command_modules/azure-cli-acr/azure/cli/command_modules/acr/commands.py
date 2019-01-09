@@ -129,6 +129,7 @@ def load_command_table(self, _):  # pylint: disable=too-many-statements
         g.command('list', 'acr_repository_list')
         g.command('show-tags', 'acr_repository_show_tags')
         g.command('show-manifests', 'acr_repository_show_manifests')
+        g.command('inspect', 'acr_repository_inspect')
         g.command('show', 'acr_repository_show')
         g.command('update', 'acr_repository_update')
         g.command('delete', 'acr_repository_delete')

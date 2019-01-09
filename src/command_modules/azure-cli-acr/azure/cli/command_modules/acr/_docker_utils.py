@@ -317,6 +317,7 @@ def request_data_from_registry(http_method,
                                result_index=None,
                                json_payload=None,
                                file_payload=None,
+                               headers=None,
                                params=None,
                                retry_times=3,
                                retry_interval=5):
