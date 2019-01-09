@@ -8,6 +8,7 @@ Release History
 * Allow force push a helm chart that doesn't exist.
 * Allow runtime operations without ARM requests.
 * Deprecating '--resource-group' parameter from 'az acr login', 'az acr repository', and 'az acr helm' commands.
+* BREAKING CHANGE: Remove '--manifest' and '--tag' parameters in repository delete command.
 
 2.1.11
 ++++++

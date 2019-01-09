@@ -129,6 +129,7 @@ def _get_aad_token(cli_ctx,
 
 def _get_credentials(cli_ctx,
                      registry_name,
+                     tenant_suffix,
                      username,
                      password,
                      only_refresh_token,
@@ -137,6 +138,7 @@ def _get_credentials(cli_ctx,
                      permission=None):
     """Try to get AAD authorization tokens or admin user credentials.
     :param str registry_name: The name of container registry
+    :param str tenant_suffix: The registry login server tenant suffix
     :param str username: The username used to log into the container registry
     :param str password: The password used to log into the container registry
     :param bool only_refresh_token: Whether to ask for only refresh token, or for both refresh and access tokens
@@ -144,22 +146,32 @@ def _get_credentials(cli_ctx,
     :param str artifact_repository: Artifact repository for which the access token is requested
     :param str permission: The requested permission on the repository, '*' or 'pull'
     """
+    resource_not_found = None
     try:
         registry, resource_group_name = get_registry_by_name(cli_ctx, registry_name)
         login_server = registry.login_server
+        if tenant_suffix:
+            logger.warning(
+                "Obtained registry login server from service. The specified suffix '%s' is ignored.",
+                tenant_suffix)
     except ResourceNotFound as e:
         # Try to use the pre-defined login server suffix to construct login server from registry name.
         login_server_suffix = get_login_server_suffix(cli_ctx)
         if not login_server_suffix:
             raise
-        registry = None
-        login_server = '{}{}'.format(registry_name, login_server_suffix).lower()
         resource_not_found = str(e)
+        registry = None
+        if tenant_suffix:
+            login_server = '{}-{}{}'.format(registry_name, tenant_suffix, login_server_suffix).lower()
+        else:
+            login_server = '{}{}'.format(registry_name, login_server_suffix).lower()
 
     # Validate the login server is reachable
     try:
         requests.get('https://' + login_server + '/v2/', verify=(not should_disable_connection_verify()))
     except RequestException:
+        if resource_not_found:
+            logger.warning("%s Default the registry login server to '%s'.", resource_not_found, login_server)
         raise CLIError("Could not connect to the registry '{}'. ".format(login_server) +
                        "Please verify if the registry exists.")
 
@@ -215,6 +227,7 @@ def _get_credentials(cli_ctx,
 
 def get_login_credentials(cli_ctx,
                           registry_name,
+                          tenant_suffix=None,
                           username=None,
                           password=None):
     """Try to get AAD authorization tokens or admin user credentials to log into a registry.
@@ -224,6 +237,7 @@ def get_login_credentials(cli_ctx,
     """
     return _get_credentials(cli_ctx,
                             registry_name,
+                            tenant_suffix,
                             username,
                             password,
                             only_refresh_token=True)
@@ -231,6 +245,7 @@ def get_login_credentials(cli_ctx,
 
 def get_access_credentials(cli_ctx,
                            registry_name,
+                           tenant_suffix=None,
                            username=None,
                            password=None,
                            repository=None,
@@ -246,6 +261,7 @@ def get_access_credentials(cli_ctx,
     """
     return _get_credentials(cli_ctx,
                             registry_name,
+                            tenant_suffix,
                             username,
                             password,
                             only_refresh_token=False,
