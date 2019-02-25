@@ -45,7 +45,7 @@ image_by_tag_or_digest_type = CLIArgumentType(
 
 
 def load_arguments(self, _):  # pylint: disable=too-many-statements
-    SkuName, PasswordName, OsType, DefaultAction, PolicyStatus, WebhookAction, WebhookStatus, TaskStatus, BaseImageTriggerType, RunStatus = self.get_models('SkuName', 'PasswordName', 'OsType', 'DefaultAction', 'PolicyStatus', 'WebhookAction', 'WebhookStatus', 'TaskStatus', 'BaseImageTriggerType', 'RunStatus')
+    SkuName, PasswordName, OsType, DefaultAction, PolicyStatus, WebhookAction, WebhookStatus, TaskStatus, BaseImageTriggerType, RunStatus, ResourceIdentityType = self.get_models('SkuName', 'PasswordName', 'OsType', 'DefaultAction', 'PolicyStatus', 'WebhookAction', 'WebhookStatus', 'TaskStatus', 'BaseImageTriggerType', 'RunStatus', 'ResourceIdentityType')
     with self.argument_context('acr') as c:
         c.argument('tags', arg_type=tags_type)
         c.argument('registry_name', options_list=['--name', '-n'], help='The name of the container registry. You can configure the default registry name using `az configure --defaults acr=<registry name>`', completer=get_resource_name_completion_list(REGISTRY_RESOURCE_TYPE), configured_default='acr')
@@ -183,8 +183,14 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         # Run agent parameters
         c.argument('cpu', type=int, help='The CPU configuration in terms of number of cores required for the run.')
 
+        # MSI parameter
+        c.argument('assign_identity', nargs='*', help="Assigns a Managed Identity to the task. Use '[system]' to refer system assigned identity, or a resource id to refer user assigned identity.")
+
     with self.argument_context('acr task create') as c:
         c.argument('task_name', completer=None)
+
+    with self.argument_context('acr task identity') as c:
+        c.argument('assign_identity', options_list=['--identities'], nargs='*', help="The identities to assign. Use '[system]' to refer system assigned identity.")
 
     with self.argument_context('acr helm') as c:
         c.argument('resource_group_name', deprecate_info=c.deprecate(hide=True))

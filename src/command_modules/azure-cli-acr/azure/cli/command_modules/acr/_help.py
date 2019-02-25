@@ -573,6 +573,47 @@ examples:
         az acr task update-run -r MyRegistry --run-id runId --no-archive false
 """
 
+helps['acr task identity'] = """
+type: group
+short-summary: Managed Service Identities for Task.
+"""
+
+helps['acr task identity assign'] = """
+type: group
+short-summary: Update the managed service identity for a task.
+examples:
+  - name: Enable the system-assigned identity to an existing task. This will replace all existing user-assigned identities. 
+    text: >
+        az acr task identity assign -n MyTask -r MyRegistry --identities [system]
+  - name: Assign user=assigned managed identities to an existing task. This will replace an existing system-assigned identity.
+    text: >
+        az acr task identity assign -n MyTask -r MyRegistry --identities "/subscriptions/<SUBSCRIPTON ID>/resourcegroups/<RESOURCE GROUP>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<USER ASSIGNED IDENTITY NAME>"
+  - name: Assign both system-assigned and user=assigned managed identities to an existing task.
+    text: >
+        az acr task identity assign -n MyTask -r MyRegistry --identities [system] "/subscriptions/<SUBSCRIPTON ID>/resourcegroups/<RESOURCE GROUP>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<USER ASSIGNED IDENTITY NAME>"
+"""
+
+helps['acr task identity remove'] = """
+type: group
+short-summary: Remove managed service identities for Task.
+examples:
+  - name: Remove a user-assigned identity from a task. 
+    text: >
+        az acr task identity remove -n MyTask -r MyRegistry --identities "/subscriptions/<SUBSCRIPTON ID>/resourcegroups/<RESOURCE GROUP>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<USER ASSIGNED IDENTITY NAME>"
+  - name: Remove all managed identities from a task.
+    text: >
+        az acr task identity remove -n MyTask -r MyRegistry
+"""
+
+helps['acr task identity show'] = """
+type: group
+short-summary: Display the managed service identities for task.
+examples:
+  - name: Display the managed service identities for a task.
+    text: >
+        az acr task identity show -n MyTask -r MyRegistry
+"""
+
 helps['acr update'] = """
 type: command
 short-summary: Update an Azure Container Registry.

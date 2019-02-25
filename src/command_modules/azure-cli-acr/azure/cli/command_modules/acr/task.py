@@ -7,17 +7,20 @@ from msrest.exceptions import ValidationError
 from knack.log import get_logger
 from knack.util import CLIError
 from azure.cli.core.commands import LongRunningOperation
-from azure.mgmt.containerregistry.v2018_09_01.models import (
+from . azure.mgmt.containerregistry.v2018_09_01.models import (
     Task,
     SourceProperties,
     AgentProperties,
     TriggerProperties,
     SourceTrigger,
     TriggerStatus,
+    ResourceIdentityType,
+    UserIdentityProperties,
     BaseImageTrigger,
     PlatformProperties,
     SourceTriggerEvent,
     AuthInfo,
+    Architecture,
     DockerBuildStep,
     FileTaskStep,
     TaskRunRequest,
@@ -30,9 +33,11 @@ from azure.mgmt.containerregistry.v2018_09_01.models import (
     SourceTriggerUpdateParameters,
     BaseImageTriggerUpdateParameters,
     AuthInfoUpdateParameters,
+    MsiProperties,
     SourceControlType,
+    OS
 )
-from ._utils import validate_managed_registry, get_validate_platform
+from ._utils import validate_managed_registry
 from ._stream_utils import stream_logs
 from ._run_polling import get_run_with_polling
 
@@ -41,7 +46,10 @@ logger = get_logger(__name__)
 
 
 TASK_NOT_SUPPORTED = 'Task is only supported for managed registries.'
+DEFAULT_TRIGGER_TYPE = SourceTriggerEvent.commit.value
 DEFAULT_TOKEN_TYPE = 'PAT'
+MSI_LOCAL_ID = '[system]'
+
 
 DEFAULT_TIMEOUT_IN_SEC = 60 * 60  # 60 minutes
 DEFAULT_CPU = 2
@@ -58,10 +66,10 @@ def acr_task_create(cmd,  # pylint: disable=too-many-locals
                     git_access_token=None,
                     image_names=None,
                     status='Enabled',
-                    os_type=None,
-                    platform=None,
+                    os_type=OS.linux.value,
                     cpu=DEFAULT_CPU,
                     timeout=DEFAULT_TIMEOUT_IN_SEC,
+                    assign_identity=None,
                     values=None,
                     source_trigger_name='defaultSourceTriggerName',
                     commit_trigger_enabled=True,
@@ -76,8 +84,7 @@ def acr_task_create(cmd,  # pylint: disable=too-many-locals
                     base_image_trigger_name='defaultBaseimageTriggerName',
                     base_image_trigger_enabled=True,
                     base_image_trigger_type='Runtime',
-                    resource_group_name=None,
-                    target=None):
+                    resource_group_name=None):
     if (commit_trigger_enabled or pull_request_trigger_enabled) and not git_access_token:
         raise CLIError("If source control trigger is enabled [--commit-trigger-enabled] or "
                        "[--pull-request-trigger-enabled] --git-access-token must be provided.")
@@ -98,8 +105,7 @@ def acr_task_create(cmd,  # pylint: disable=too-many-locals
             docker_file_path=file,
             arguments=(arg if arg else []) + (secret_arg if secret_arg else []),
             context_path=context_path,
-            context_access_token=git_access_token,
-            target=target
+            context_access_token=git_access_token
         )
 
     registry, resource_group_name = validate_managed_registry(
@@ -143,15 +149,17 @@ def acr_task_create(cmd,  # pylint: disable=too-many-locals
             name=base_image_trigger_name
         )
 
-    platform_os, platform_arch, platform_variant = get_validate_platform(cmd, os_type, platform)
+    identity = None
+    if assign_identity is not None:
+        identity = _build_identities_info(assign_identity)
 
     task_create_parameters = Task(
         location=registry.location,
+        identity=identity,
         step=step,
         platform=PlatformProperties(
-            os=platform_os,
-            architecture=platform_arch,
-            variant=platform_variant
+            os=os_type,
+            architecture=Architecture.amd64.value
         ),
         status=status,
         timeout=timeout,
@@ -214,7 +222,6 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
                     # task parameters
                     status=None,
                     os_type=None,
-                    platform=None,
                     cpu=None,
                     timeout=None,
                     context_path=None,
@@ -232,8 +239,7 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
                     set_value=None,
                     set_secret=None,
                     base_image_trigger_enabled=None,
-                    base_image_trigger_type=None,
-                    target=None):
+                    base_image_trigger_type=None):
     _, resource_group_name = validate_managed_registry(
         cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
 
@@ -266,8 +272,7 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
             docker_file_path=file,
             arguments=arguments,
             context_path=context_path,
-            context_access_token=git_access_token,
-            target=target
+            context_access_token=git_access_token
         )
     elif step:
         if isinstance(step, DockerBuildStep):
@@ -278,8 +283,7 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
                 docker_file_path=file,
                 arguments=arguments,
                 context_path=context_path,
-                context_access_token=git_access_token,
-                target=target
+                context_access_token=git_access_token
             )
 
         elif isinstance(step, FileTaskStep):
@@ -297,8 +301,7 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
             source_control_type = SourceControlType.github.value
         else:
             source_control_type = SourceControlType.visual_studio_team_service.value
-
-    # update trigger
+    # update trigger moved to trigger group
     source_trigger_update_params = None
     base_image_trigger_update_params = None
     if task.trigger:
@@ -335,18 +338,10 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
                 name=base_image_trigger.name if base_image_trigger else "defaultBaseimageTriggerName"
             )
 
-    platform_os = None
-    platform_arch = None
-    platform_variant = None
-    if os_type or platform:
-        platform_os, platform_arch, platform_variant = get_validate_platform(cmd, os_type, platform)
-
     taskUpdateParameters = TaskUpdateParameters(
         status=status,
         platform=PlatformUpdateParameters(
-            os=platform_os if platform_os else os_type,
-            architecture=platform_arch,
-            variant=platform_variant
+            os=os_type
         ),
         agent_configuration=AgentProperties(
             cpu=cpu
@@ -360,6 +355,88 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
     )
 
     return client.update(resource_group_name, registry_name, task_name, taskUpdateParameters)
+
+
+def acr_task_identity_assign(cmd,
+                             client,
+                             task_name,
+                             registry_name,
+                             assign_identity,
+                             resource_group_name=None):
+    _, resource_group_name = validate_managed_registry(
+        cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
+
+    identity = None
+    if assign_identity is not None:
+        identity = _build_identities_info(assign_identity)
+
+    taskUpdateParameters = TaskUpdateParameters(
+        identity=identity,
+        status=None,
+        platform=PlatformUpdateParameters(
+            os=None
+        ),
+        agent_configuration=AgentProperties(
+            cpu=None
+        ),
+        timeout=None,
+        step=None,
+        trigger=TriggerUpdateParameters(
+            source_triggers=None,
+            base_image_trigger=None
+        )
+    )
+
+    return client.update(resource_group_name, registry_name, task_name, taskUpdateParameters)
+
+
+def acr_task_identity_remove(cmd,
+                             client,
+                             task_name,
+                             registry_name,
+                             assign_identity=None,
+                             resource_group_name=None):
+    _, resource_group_name = validate_managed_registry(
+        cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
+
+    identity = None
+    if assign_identity is not None:
+        identity = _build_identities_info(assign_identity, True)
+    else:
+        identity = MsiProperties(
+            type=ResourceIdentityType.none
+        )
+
+    taskUpdateParameters = TaskUpdateParameters(
+        identity=identity,
+        status=None,
+        platform=PlatformUpdateParameters(
+            os=None
+        ),
+        agent_configuration=AgentProperties(
+            cpu=None
+        ),
+        timeout=None,
+        step=None,
+        trigger=TriggerUpdateParameters(
+            source_triggers=None,
+            base_image_trigger=None
+        )
+    )
+
+    return client.update(resource_group_name, registry_name, task_name, taskUpdateParameters)
+
+
+def acr_task_identity_show(cmd,
+                           client,
+                           task_name,
+                           registry_name,
+                           resource_group_name=None):
+    _, resource_group_name = validate_managed_registry(
+        cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
+
+    task = client.get_details(resource_group_name, registry_name, task_name).additional_properties
+    return task
 
 
 def acr_task_update_run(cmd,
@@ -392,9 +469,9 @@ def acr_task_run(cmd,
         cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
 
     from ._client_factory import cf_acr_registries
-    client_registries = cf_acr_registries(cmd.cli_ctx)
+    client_registries = cf_acr_registries(cmd)
 
-    queued_run = LongRunningOperation(cmd.cli_ctx)(
+    queued_run = LongRunningOperation(cmd)(
         client_registries.schedule_run(
             resource_group_name,
             registry_name,
@@ -519,6 +596,35 @@ def _get_list_runs_message(base_message, task_name=None, image=None):
     if image:
         base_message = "{} for image '{}'".format(base_message, image)
     return "{}.".format(base_message)
+
+
+def _get_trigger_type(trigger_type):
+    if trigger_type:
+        if trigger_type.lower() == SourceTriggerEvent.commit.value:
+            return SourceTriggerEvent.commit.value
+        if trigger_type.lower() == SourceTriggerEvent.pullrequest.value:
+            return SourceTriggerEvent.pullrequest.value
+    return None
+
+
+def _build_identities_info(identities, is_remove=None):
+    identities = identities or []
+    identity_types = []
+    if not identities or MSI_LOCAL_ID in identities:
+        identity_types.append(ResourceIdentityType.system_assigned.value)
+    external_identities = [x for x in identities if x != MSI_LOCAL_ID]
+    if external_identities:
+        identity_types.append(ResourceIdentityType.user_assigned.value)
+    identity_types = ', '.join(identity_types)
+    if not identity_types:
+        identity_types = ResourceIdentityType.none.value
+    identity = MsiProperties(type=identity_types)
+    if external_identities:
+        if is_remove is not None:
+            identity.user_assigned_identities = {e: None for e in external_identities}
+        else:
+            identity.user_assigned_identities = {e: UserIdentityProperties() for e in external_identities}
+    return identity
 
 
 def _get_trigger_event_list(source_triggers,
