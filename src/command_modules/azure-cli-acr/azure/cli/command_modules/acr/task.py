@@ -285,8 +285,7 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
             source_control_type = SourceControlType.visual_studio_team_service.value
 
     # update trigger
-    source_trigger_update_params = None
-    base_image_trigger_update_params = None
+    source_trigger_update_params, base_image_trigger_update_params = None, None
     if task.trigger:
         TriggerStatus = cmd.get_models('TriggerStatus')
 
@@ -329,9 +328,7 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
                 name=base_image_trigger.name if base_image_trigger else "defaultBaseimageTriggerName"
             )
 
-    platform_os = None
-    platform_arch = None
-    platform_variant = None
+    platform_os, platform_arch, platform_variant = None, None, None
     if os_type or platform:
         platform_os, platform_arch, platform_variant = get_validate_platform(cmd, os_type, platform)
 
