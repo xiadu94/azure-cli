@@ -595,7 +595,7 @@ examples:
 
 helps['acr task identity remove'] = """
 type: group
-short-summary: Remove managed service identities for Task.
+short-summary: Remove managed service identities for a task.
 examples:
   - name: Remove a user-assigned identity from a task. 
     text: >
