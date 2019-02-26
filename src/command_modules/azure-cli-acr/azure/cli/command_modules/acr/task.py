@@ -33,7 +33,7 @@ from . azure.mgmt.containerregistry.v2018_09_01.models import (
     SourceTriggerUpdateParameters,
     BaseImageTriggerUpdateParameters,
     AuthInfoUpdateParameters,
-    MsiProperties,
+    IdentityProperties,
     SourceControlType,
     OS
 )
@@ -48,7 +48,7 @@ logger = get_logger(__name__)
 TASK_NOT_SUPPORTED = 'Task is only supported for managed registries.'
 DEFAULT_TRIGGER_TYPE = SourceTriggerEvent.commit.value
 DEFAULT_TOKEN_TYPE = 'PAT'
-MSI_LOCAL_ID = '[system]'
+IDENTITY_LOCAL_ID = '[system]'
 
 
 DEFAULT_TIMEOUT_IN_SEC = 60 * 60  # 60 minutes
@@ -403,7 +403,7 @@ def acr_task_identity_remove(cmd,
     if assign_identity is not None:
         identity = _build_identities_info(assign_identity, True)
     else:
-        identity = MsiProperties(
+        identity = IdentityProperties(
             type=ResourceIdentityType.none
         )
 
@@ -435,8 +435,7 @@ def acr_task_identity_show(cmd,
     _, resource_group_name = validate_managed_registry(
         cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
 
-    task = client.get_details(resource_group_name, registry_name, task_name).additional_properties
-    return task
+    return client.get_details(resource_group_name, registry_name, task_name).additional_properties
 
 
 def acr_task_update_run(cmd,
@@ -610,15 +609,15 @@ def _get_trigger_type(trigger_type):
 def _build_identities_info(identities, is_remove=None):
     identities = identities or []
     identity_types = []
-    if not identities or MSI_LOCAL_ID in identities:
+    if not identities or IDENTITY_LOCAL_ID in identities:
         identity_types.append(ResourceIdentityType.system_assigned.value)
-    external_identities = [x for x in identities if x != MSI_LOCAL_ID]
+    external_identities = [x for x in identities if x != IDENTITY_LOCAL_ID]
     if external_identities:
         identity_types.append(ResourceIdentityType.user_assigned.value)
     identity_types = ', '.join(identity_types)
     if not identity_types:
         identity_types = ResourceIdentityType.none.value
-    identity = MsiProperties(type=identity_types)
+    identity = IdentityProperties(type=identity_types)
     if external_identities:
         if is_remove is not None:
             identity.user_assigned_identities = {e: None for e in external_identities}
