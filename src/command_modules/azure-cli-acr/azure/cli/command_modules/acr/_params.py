@@ -136,6 +136,8 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         c.argument('values', help="The task values file path relative to the source context.")
         c.argument('set_value', options_list=['--set'], help="Value in 'name[=value]' format.", action='append', validator=validate_set)
         c.argument('set_secret', help="Secret value in 'name[=value]' format.", action='append', validator=validate_set_secret)
+        c.argument('cmd', options_list=['--__cmd__'])
+        c.argument('cmd_value', help="Indicates whether the source location be interpreted as an image name to run or a context.", options_list=['--cmd'])
 
     with self.argument_context('acr build') as c:
         c.argument('registry_name', options_list=['--registry', '-r'])
