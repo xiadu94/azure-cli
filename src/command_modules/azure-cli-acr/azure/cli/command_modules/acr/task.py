@@ -8,6 +8,14 @@ from knack.log import get_logger
 from knack.util import CLIError
 from azure.cli.core.commands import LongRunningOperation
 
+from . azure.mgmt.containerregistry.v2018_09_01.models import(
+    Task,
+    TaskUpdateParameters,
+    IdentityProperties,
+    UserIdentityProperties,
+    ResourceIdentityType
+)
+
 from ._utils import validate_managed_registry, get_validate_platform
 from ._stream_utils import stream_logs
 
@@ -127,8 +135,8 @@ def acr_task_create(cmd,  # pylint: disable=too-many-locals
 
     platform_os, platform_arch, platform_variant = get_validate_platform(cmd, os_type, platform)
 
-    Task, PlatformProperties, AgentProperties, TriggerProperties = cmd.get_models(
-        'Task', 'PlatformProperties', 'AgentProperties', 'TriggerProperties')
+    PlatformProperties, AgentProperties, TriggerProperties = cmd.get_models(
+        'PlatformProperties', 'AgentProperties', 'TriggerProperties')
 
     identity = None
     if assign_identity is not None:
@@ -340,8 +348,8 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
     if os_type or platform:
         platform_os, platform_arch, platform_variant = get_validate_platform(cmd, os_type, platform)
 
-    TaskUpdateParameters, PlatformUpdateParameters, AgentProperties, TriggerUpdateParameters = cmd.get_models(
-        'TaskUpdateParameters', 'PlatformUpdateParameters', 'AgentProperties', 'TriggerUpdateParameters')
+    PlatformUpdateParameters, AgentProperties, TriggerUpdateParameters = cmd.get_models(
+        'PlatformUpdateParameters', 'AgentProperties', 'TriggerUpdateParameters')
     taskUpdateParameters = TaskUpdateParameters(
         status=status,
         platform=PlatformUpdateParameters(
@@ -376,8 +384,8 @@ def acr_task_identity_assign(cmd,
     if assign_identity is not None:
         identity = _build_identities_info(cmd, assign_identity)
 
-    TaskUpdateParameters, PlatformUpdateParameters, AgentProperties, TriggerUpdateParameters = cmd.get_models(
-        'TaskUpdateParameters', 'PlatformUpdateParameters', 'AgentProperties', 'TriggerUpdateParameters')
+    PlatformUpdateParameters, AgentProperties, TriggerUpdateParameters = cmd.get_models(
+        'PlatformUpdateParameters', 'AgentProperties', 'TriggerUpdateParameters')
     taskUpdateParameters = TaskUpdateParameters(
         identity=identity,
         status=None,
@@ -406,7 +414,6 @@ def acr_task_identity_remove(cmd,
                              resource_group_name=None):
     _, resource_group_name = validate_managed_registry(
         cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
-    IdentityProperties, ResourceIdentityType = cmd.get_models('IdentityProperties', 'ResourceIdentityType')
 
     identity = None
     if assign_identity is not None:
@@ -416,8 +423,8 @@ def acr_task_identity_remove(cmd,
             type=ResourceIdentityType.none
         )
 
-    TaskUpdateParameters, PlatformUpdateParameters, AgentProperties, TriggerUpdateParameters = cmd.get_models(
-        'TaskUpdateParameters', 'PlatformUpdateParameters', 'AgentProperties', 'TriggerUpdateParameters')
+    PlatformUpdateParameters, AgentProperties, TriggerUpdateParameters = cmd.get_models(
+        'PlatformUpdateParameters', 'AgentProperties', 'TriggerUpdateParameters')
     taskUpdateParameters = TaskUpdateParameters(
         identity=identity,
         status=None,
@@ -610,8 +617,6 @@ def _get_list_runs_message(base_message, task_name=None, image=None):
 
 
 def _build_identities_info(cmd, identities, is_remove=None):
-    IdentityProperties, UserIdentityProperties, ResourceIdentityType = cmd.get_models(
-        'IdentityProperties', 'UserIdentityProperties', 'ResourceIdentityType')
 
     identities = identities or []
     identity_types = []
