@@ -642,7 +642,7 @@ def acr_teleport(cmd,
             )
             _mkdir(base_mnt)
             logger.warning(mount_command)
-        source_file = '{}/{}'.format(source, f)
+        source_file = '{}/{}'.format(base_mnt, f)
         target_folder = '/mnt/{}'.format(digest.split(':')[1])
         _mkdir(target_folder)
         _mount(source_file, target_folder)
