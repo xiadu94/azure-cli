@@ -598,41 +598,6 @@ def _get_manifest(login_server, repository, tag, username, password, retry_times
     raise CLIError(errorMessage)
 
 
-def acr_mount(cmd,
-              registry_name,
-              image,
-              username=None,
-              password=None):
-    repository, tag, manifest = _parse_image_name(image, allow_digest=True)
-
-    login_server, username, password = get_access_credentials(
-        cmd=cmd,
-        registry_name=registry_name,
-        username=username,
-        password=password,
-        repository=repository,
-        permission='pull')
-
-    manifest_content = _get_manifest(
-        login_server=login_server,
-        repository=repository,
-        tag=manifest or tag,
-        username=username,
-        password=password)
-
-    for layer in manifest_content['layers']:
-        digest = layer['digest']
-        mount = request_data_from_registry(
-            http_method='get',
-            login_server=login_server,
-            path='/acr/v1/{}/_mounts/{}'.format(repository, digest),
-            username=username,
-            password=password)[0]
-        layer['mount'] = mount
-
-    return manifest_content
-
-
 def acr_teleport(cmd,
                  registry_name,
                  image,
@@ -655,6 +620,9 @@ def acr_teleport(cmd,
         username=username,
         password=password)
 
+    mount_command = None
+    base_mnt = '/mnt/{}'.format(login_server)
+
     for layer in manifest_content['layers']:
         digest = layer['digest']
         mount = request_data_from_registry(
@@ -663,11 +631,28 @@ def acr_teleport(cmd,
             path='/acr/v1/{}/_mounts/{}'.format(repository, digest),
             username=username,
             password=password)[0]
+        layer['mount'] = mount
         source = mount['source']
         u = mount['credential']['username']
         p = mount['credential']['password']
-        command = 'sudo mount -t cifs {} /mnt/{} -o vers=3.0,username={},password={},dir_mode=0777,file_mode=0777,sec=ntlmssp'.format(
-            source, login_server, u, p
-        )
-        logger.warning(command)
-        break
+        f = mount['file']
+        if not mount_command:
+            mount_command = 'sudo mount -t cifs {} {} -o vers=3.0,username={},password={},dir_mode=0777,file_mode=0777,sec=ntlmssp'.format(
+                source, base_mnt, u, p
+            )
+            _mkdir(base_mnt)
+            logger.warning(mount_command)
+        source_file = '{}/{}'.format(source, f)
+        target_folder = '/mnt/{}'.format(digest.split(':')[1])
+        _mkdir(target_folder)
+        _mount(source_file, target_folder)
+
+    return manifest_content
+
+
+def _mkdir(path):
+    logger.warning('mkdir -p {}'.format(path))
+
+
+def _mount(source, target):
+    logger.warning('mount {} {}'.format(source, target))

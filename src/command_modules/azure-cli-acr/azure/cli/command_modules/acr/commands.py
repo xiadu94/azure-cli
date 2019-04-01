@@ -138,9 +138,6 @@ def load_command_table(self, _):  # pylint: disable=too-many-statements
     with self.command_group('acr', acr_repo_util) as g:
         g.command('teleport', 'acr_teleport')
 
-    with self.command_group('acr', acr_repo_util) as g:
-        g.command('mount', 'acr_mount')
-
     with self.command_group('acr webhook', acr_webhook_util) as g:
         g.command('list', 'acr_webhook_list')
         g.command('create', 'acr_webhook_create')
