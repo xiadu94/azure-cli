@@ -28,6 +28,9 @@ ORDERBY_PARAMS = {
     'time_desc': 'timedesc'
 }
 DEFAULT_PAGINATION = 100
+MANIFEST_V2_HEADER = {
+    'Accept': 'application/vnd.docker.distribution.manifest.v2+json'
+}
 
 
 def _get_repository_path(repository=None):
@@ -560,3 +563,111 @@ def get_image_digest(cmd, registry_name, image):
         password=password)
 
     return repository, tag, manifest
+
+
+def _get_manifest(login_server, repository, tag, username, password, retry_times=3, retry_interval=5):
+    import requests, time
+    from azure.cli.core.util import should_disable_connection_verify
+    from ._docker_utils import get_authorization_header, log_registry_response, parse_error_message
+    url = 'https://{}/v2/{}/manifests/{}'.format(login_server, repository, tag)
+    headers = get_authorization_header(username, password)
+    headers.update(MANIFEST_V2_HEADER)
+    for i in range(0, retry_times):
+        errorMessage = None
+        try:
+            response = requests.get(
+                url=url,
+                headers=headers,
+                verify=(not should_disable_connection_verify())
+            )
+            log_registry_response(response)
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 401:
+                raise CLIError(parse_error_message('Authentication required.', response))
+            elif response.status_code == 404:
+                raise CLIError(parse_error_message('The manifest does not exist.', response))
+            else:
+                raise Exception(parse_error_message('Could not get manifest digest.', response))
+        except CLIError:
+            raise
+        except Exception as e:  # pylint: disable=broad-except
+            errorMessage = str(e)
+            logger.debug('Retrying %s with exception %s', i + 1, errorMessage)
+            time.sleep(retry_interval)
+    raise CLIError(errorMessage)
+
+
+def acr_mount(cmd,
+              registry_name,
+              image,
+              username=None,
+              password=None):
+    repository, tag, manifest = _parse_image_name(image, allow_digest=True)
+
+    login_server, username, password = get_access_credentials(
+        cmd=cmd,
+        registry_name=registry_name,
+        username=username,
+        password=password,
+        repository=repository,
+        permission='pull')
+
+    manifest_content = _get_manifest(
+        login_server=login_server,
+        repository=repository,
+        tag=manifest or tag,
+        username=username,
+        password=password)
+
+    for layer in manifest_content['layers']:
+        digest = layer['digest']
+        mount = request_data_from_registry(
+            http_method='get',
+            login_server=login_server,
+            path='/acr/v1/{}/_mounts/{}'.format(repository, digest),
+            username=username,
+            password=password)[0]
+        layer['mount'] = mount
+
+    return manifest_content
+
+
+def acr_teleport(cmd,
+                 registry_name,
+                 image,
+                 username=None,
+                 password=None):
+    repository, tag, manifest = _parse_image_name(image, allow_digest=True)
+
+    login_server, username, password = get_access_credentials(
+        cmd=cmd,
+        registry_name=registry_name,
+        username=username,
+        password=password,
+        repository=repository,
+        permission='pull')
+
+    manifest_content = _get_manifest(
+        login_server=login_server,
+        repository=repository,
+        tag=manifest or tag,
+        username=username,
+        password=password)
+
+    for layer in manifest_content['layers']:
+        digest = layer['digest']
+        mount = request_data_from_registry(
+            http_method='get',
+            login_server=login_server,
+            path='/acr/v1/{}/_mounts/{}'.format(repository, digest),
+            username=username,
+            password=password)[0]
+        source = mount['source']
+        u = mount['credential']['username']
+        p = mount['credential']['password']
+        command = 'sudo mount -t cifs {} /mnt/{} -o vers=3.0,username={},password={},dir_mode=0777,file_mode=0777,sec=ntlmssp'.format(
+            source, login_server, u, p
+        )
+        logger.warning(command)
+        break

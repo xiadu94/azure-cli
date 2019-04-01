@@ -88,6 +88,9 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
     with self.argument_context('acr login') as c:
         c.argument('resource_group_name', deprecate_info=c.deprecate(hide=True))
 
+    with self.argument_context('acr mount') as c:
+        c.argument('image', arg_type=image_by_tag_or_digest_type)
+
     with self.argument_context('acr repository') as c:
         c.argument('resource_group_name', deprecate_info=c.deprecate(hide=True))
         c.argument('repository', help="The name of the repository.")
