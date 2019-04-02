@@ -2,6 +2,10 @@
 
 Release History
 ===============
+2.1.12
+++++++
+* `deployment create/list/show`: improve table output
+* `deployment create/validate`: fix issue where type secureObject was not recognized.
 
 2.1.11
 ++++++
