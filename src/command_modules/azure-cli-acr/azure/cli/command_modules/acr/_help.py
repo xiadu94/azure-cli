@@ -200,7 +200,7 @@ examples:
         az acr import -n MyRegistry --source sourcerepository:sourcetag -t targetrepository:targettag -r /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/sourceResourceGroup/providers/Microsoft.ContainerRegistry/registries/sourceRegistry
   - name: Import an image from a public repository in Docker Hub
     text: >
-        az acr import -n MyRegistry --source docker.io/sourcerepository:sourcetag -t targetrepository:targettag
+        az acr import -n MyRegistry --source docker.io/library/hello-world:latest -t targetrepository:targettag
 """
 
 helps['acr list'] = """
@@ -465,6 +465,15 @@ examples:
   - name: Create a Windows task from a public GitHub repository which builds the Azure Container Builder image on Amd64 architecture.
     text: >
         az acr task create -t acb:{{.Run.ID}} -n acb-win -r MyRegistry -c https://github.com/Azure/acr-builder.git -f Windows.Dockerfile --commit-trigger-enabled false --pull-request-trigger-enabled false --platform Windows/amd64
+- name: Create a Linux task from a public GitHub repository which builds the hello-world image with a git commit trigger and with the system-assigned managed identity
+    text: >
+        az acr task create -t hello-world:{{.Run.ID}} -n hello-world -r MyRegistry -c https://github.com/Azure-Samples/acr-build-helloworld-node.git -f Dockerfile --assign-identity [system]
+- name: Create a Linux task from a public GitHub repository which builds the hello-world image with a git commit trigger and with a user-assigned managed identity
+    text: >
+        az acr task create -t hello-world:{{.Run.ID}} -n hello-world -r MyRegistry -c https://github.com/Azure-Samples/acr-build-helloworld-node.git -f Dockerfile --assign-identity "/subscriptions/<SUBSCRIPTON ID>/resourcegroups/myResourceGroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/myUserAssignedIdentitiy"
+- name: Create a Linux task from a public GitHub repository which builds the hello-world image with a git commit trigger and with both system-assigned and user-assigned managed identities
+    text: >
+        az acr task create -t hello-world:{{.Run.ID}} -n hello-world -r MyRegistry -c https://github.com/Azure-Samples/acr-build-helloworld-node.git -f Dockerfile --assign-identity [system] "/subscriptions/<SUBSCRIPTON ID>/resourcegroups/myResourceGroup/providers/Microsoft.ManagedIdentity/userAssignedIdentities/myUserAssignedIdentitiy"
 """
 
 helps['acr task delete'] = """
@@ -571,6 +580,47 @@ examples:
   - name: Update an existing run to be archived.
     text: >
         az acr task update-run -r MyRegistry --run-id runId --no-archive false
+"""
+
+helps['acr task identity'] = """
+type: group
+short-summary: Managed Service Identities for Task.
+"""
+
+helps['acr task identity assign'] = """
+type: group
+short-summary: Update the managed service identity for a task.
+examples:
+  - name: Enable the system-assigned identity to an existing task. This will replace all existing user-assigned identities. 
+    text: >
+        az acr task identity assign -n MyTask -r MyRegistry --identities [system]
+  - name: Assign user=assigned managed identities to an existing task. This will replace an existing system-assigned identity.
+    text: >
+        az acr task identity assign -n MyTask -r MyRegistry --identities "/subscriptions/<SUBSCRIPTON ID>/resourcegroups/<RESOURCE GROUP>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<USER ASSIGNED IDENTITY NAME>"
+  - name: Assign both system-assigned and user=assigned managed identities to an existing task.
+    text: >
+        az acr task identity assign -n MyTask -r MyRegistry --identities [system] "/subscriptions/<SUBSCRIPTON ID>/resourcegroups/<RESOURCE GROUP>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<USER ASSIGNED IDENTITY NAME>"
+"""
+
+helps['acr task identity remove'] = """
+type: group
+short-summary: Remove managed service identities for a task.
+examples:
+  - name: Remove a user-assigned identity from a task. 
+    text: >
+        az acr task identity remove -n MyTask -r MyRegistry --identities "/subscriptions/<SUBSCRIPTON ID>/resourcegroups/<RESOURCE GROUP>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<USER ASSIGNED IDENTITY NAME>"
+  - name: Remove all managed identities from a task.
+    text: >
+        az acr task identity remove -n MyTask -r MyRegistry
+"""
+
+helps['acr task identity show'] = """
+type: group
+short-summary: Display the managed service identities for task.
+examples:
+  - name: Display the managed service identities for a task.
+    text: >
+        az acr task identity show -n MyTask -r MyRegistry
 """
 
 helps['acr update'] = """
