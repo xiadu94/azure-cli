@@ -61,7 +61,8 @@ def acr_task_create(cmd,  # pylint: disable=too-many-locals
                     base_image_trigger_type='Runtime',
                     assign_identity=None,
                     resource_group_name=None,
-                    target=None):
+                    target=None,
+                    auth_mode=None):
     if (commit_trigger_enabled or pull_request_trigger_enabled) and not git_access_token:
         raise CLIError("If source control trigger is enabled [--commit-trigger-enabled] or "
                        "[--pull-request-trigger-enabled] --git-access-token must be provided.")
@@ -159,6 +160,10 @@ def acr_task_create(cmd,  # pylint: disable=too-many-locals
         trigger=TriggerProperties(
             source_triggers=source_triggers,
             base_image_trigger=base_image_trigger
+        ),
+        credentials=get_custom_registry_credentials(
+            cmd=cmd,
+            auth_mode=auth_mode
         )
     )
 
@@ -231,7 +236,8 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
                     set_secret=None,
                     base_image_trigger_enabled=None,
                     base_image_trigger_type=None,
-                    target=None):
+                    target=None,
+                    auth_mode=None):
     _, resource_group_name = validate_managed_registry(
         cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
 
@@ -365,6 +371,10 @@ def acr_task_update(cmd,  # pylint: disable=too-many-locals
         trigger=TriggerUpdateParameters(
             source_triggers=source_trigger_update_params,
             base_image_trigger=base_image_trigger_update_params
+        ),
+        credentials=get_custom_registry_credentials(
+            cmd=cmd,
+            auth_mode=auth_mode
         )
     )
 
@@ -454,6 +464,110 @@ def acr_task_identity_show(cmd,
 
     return client.get_details(resource_group_name, registry_name, task_name).additional_properties
 
+
+def acr_task_credential_add(cmd,
+                            client,
+                            task_name,
+                            registry_name,
+                            login_server,
+                            username,
+                            password,
+                            resource_group_name=None):
+    _, resource_group_name = validate_managed_registry(
+        cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
+
+    existingCreds = client.get_details(resource_group_name, registry_name, task_name).credentials
+    existingCreds = {} if not existingCreds else existingCreds.custom_registries
+
+    if login_server in existingCreds:
+        raise CLIError("Login server '{}' already exists. You cannot add it again.".format(login_server))
+
+    TaskUpdateParameters = cmd.get_models('TaskUpdateParameters')
+    taskUpdateParameters = TaskUpdateParameters(
+        credentials=get_custom_registry_credentials(
+            cmd=cmd,
+            login_server=login_server,
+            username=username,
+            password=password
+        )
+    )
+
+    resp = LongRunningOperation(cmd.cli_ctx)(
+        client.update(resource_group_name, registry_name, task_name, taskUpdateParameters)
+    )
+    resp = resp.credentials
+    return {} if not resp else resp.custom_registries
+
+
+def acr_task_credential_update(cmd,
+                               client,
+                               task_name,
+                               registry_name,
+                               login_server,
+                               username,
+                               password,
+                               resource_group_name=None):
+    _, resource_group_name = validate_managed_registry(
+        cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
+
+    existingCreds = client.get_details(resource_group_name, registry_name, task_name).credentials
+    existingCreds = {} if not existingCreds else existingCreds.custom_registries
+
+    if login_server not in existingCreds:
+        raise CLIError("Login server '{}' not found.".format(login_server))
+
+    TaskUpdateParameters = cmd.get_models('TaskUpdateParameters')
+    taskUpdateParameters = TaskUpdateParameters(
+        credentials=get_custom_registry_credentials(
+            cmd=cmd,
+            login_server=login_server,
+            username=username,
+            password=password
+        )
+    )
+
+    resp = LongRunningOperation(cmd.cli_ctx)(
+        client.update(resource_group_name, registry_name, task_name, taskUpdateParameters)
+    )
+    resp = resp.credentials
+    return {} if not resp else resp.custom_registries
+
+
+def acr_task_credential_remove(cmd,
+                               client,
+                               task_name,
+                               registry_name,
+                               login_server,
+                               resource_group_name=None):
+    _, resource_group_name = validate_managed_registry(
+        cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
+
+    TaskUpdateParameters = cmd.get_models('TaskUpdateParameters')
+    taskUpdateParameters = TaskUpdateParameters(
+        credentials=get_custom_registry_credentials(
+            cmd=cmd,
+            login_server=login_server
+        )
+    )
+
+    resp = LongRunningOperation(cmd.cli_ctx)(
+        client.update(resource_group_name, registry_name, task_name, taskUpdateParameters)
+    )
+    resp = resp.credentials
+    return {} if not resp else resp.custom_registries
+
+
+def acr_task_credential_list(cmd,
+                             client,
+                             task_name,
+                             registry_name,
+                             resource_group_name=None):
+    _, resource_group_name = validate_managed_registry(
+        cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
+
+    resp = client.get_details(resource_group_name, registry_name, task_name).credentials
+    return {} if not resp else resp.custom_registries
+	
 
 def acr_task_update_run(cmd,
                         client,
