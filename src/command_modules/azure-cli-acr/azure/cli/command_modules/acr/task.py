@@ -8,12 +8,15 @@ from knack.log import get_logger
 from knack.util import CLIError
 from azure.cli.core.commands import LongRunningOperation
 
-from . azure.mgmt.containerregistry.v2018_09_01.models import(
+from . azure.mgmt.containerregistry.v2019_04_01.models import(
     Task,
     TaskUpdateParameters,
     IdentityProperties,
     UserIdentityProperties,
-    ResourceIdentityType
+    ResourceIdentityType,
+    CustomRegistryCredentials,
+    SecretObject,
+    SecretObjectType
 )
 
 from ._utils import validate_managed_registry, get_validate_platform, get_custom_registry_credentials
@@ -470,25 +473,29 @@ def acr_task_credential_add(cmd,
                             task_name,
                             registry_name,
                             login_server,
-                            username,
-                            password,
+                            username=None,
+                            password=None,
+                            kv_username=None,
+                            kv_password=None,
+                            identity=None,
                             resource_group_name=None):
     _, resource_group_name = validate_managed_registry(
         cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
-
+    
     existingCreds = client.get_details(resource_group_name, registry_name, task_name).credentials
     existingCreds = {} if not existingCreds else existingCreds.custom_registries
 
     if login_server in existingCreds:
         raise CLIError("Login server '{}' already exists. You cannot add it again.".format(login_server))
 
-    TaskUpdateParameters = cmd.get_models('TaskUpdateParameters')
     taskUpdateParameters = TaskUpdateParameters(
         credentials=get_custom_registry_credentials(
             cmd=cmd,
             login_server=login_server,
             username=username,
-            password=password
+            password=password,
+            kv_username=kv_username,
+            identity=identity
         )
     )
 
@@ -496,7 +503,7 @@ def acr_task_credential_add(cmd,
         client.update(resource_group_name, registry_name, task_name, taskUpdateParameters)
     )
     resp = resp.credentials
-    return {} if not resp else resp.custom_registries
+    #return {} if not resp else resp.custom_registries
 
 
 def acr_task_credential_update(cmd,
@@ -504,8 +511,11 @@ def acr_task_credential_update(cmd,
                                task_name,
                                registry_name,
                                login_server,
-                               username,
-                               password,
+                               username=None,
+                               password=None,
+                               kv_username=None,
+                               kv_password=None,
+                               identity=None,
                                resource_group_name=None):
     _, resource_group_name = validate_managed_registry(
         cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
@@ -516,13 +526,13 @@ def acr_task_credential_update(cmd,
     if login_server not in existingCreds:
         raise CLIError("Login server '{}' not found.".format(login_server))
 
-    TaskUpdateParameters = cmd.get_models('TaskUpdateParameters')
     taskUpdateParameters = TaskUpdateParameters(
         credentials=get_custom_registry_credentials(
             cmd=cmd,
             login_server=login_server,
             username=username,
-            password=password
+            password=password,
+            identity=identity
         )
     )
 
@@ -542,7 +552,6 @@ def acr_task_credential_remove(cmd,
     _, resource_group_name = validate_managed_registry(
         cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
 
-    TaskUpdateParameters = cmd.get_models('TaskUpdateParameters')
     taskUpdateParameters = TaskUpdateParameters(
         credentials=get_custom_registry_credentials(
             cmd=cmd,
@@ -749,6 +758,23 @@ def _build_identities_info(cmd, identities, is_remove=None):
         else:
             identity.user_assigned_identities = {e: UserIdentityProperties() for e in external_identities}
     return identity
+    # identities = identities or []
+    # identity_types = []
+    # if not identities or IDENTITY_LOCAL_ID in identities:
+    #     identity_types.append(ResourceIdentityType.system_assigned.value)
+    # external_identities = [x for x in identities if x != IDENTITY_LOCAL_ID]
+    # if external_identities:
+    #     identity_types.append(ResourceIdentityType.user_assigned.value)
+    # identity_types = ', '.join(identity_types)
+    # if not identity_types:
+    #     identity_types = ResourceIdentityType.none.value
+    # identity = IdentityProperties(type=identity_types)
+    # if external_identities:
+    #     if is_remove is not None:
+    #         identity.user_assigned_identities = {e: None for e in external_identities}
+    #     else:
+    #         identity.user_assigned_identities = {e: UserIdentityProperties() for e in external_identities}
+    # return identity
 
 
 def _get_trigger_event_list(cmd,

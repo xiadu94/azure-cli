@@ -8,6 +8,17 @@ from knack.log import get_logger
 from knack.prompting import prompt_y_n, NoTTYException
 from azure.cli.core.commands.parameters import get_resources_in_subscription
 
+from . azure.mgmt.containerregistry.v2019_04_01.models import(
+    Task,
+    TaskUpdateParameters,
+    IdentityProperties,
+    UserIdentityProperties,
+    ResourceIdentityType,
+    CustomRegistryCredentials,
+    SecretObject,
+    SecretObjectType
+)
+
 from ._constants import (
     REGISTRY_RESOURCE_TYPE,
     ACR_RESOURCE_PROVIDER,
@@ -375,51 +386,67 @@ def get_validate_platform(cmd, os_type, platform):
     return platform_os, platform_arch, platform_variant
 
 
-def get_custom_registry_credentials(cmd, auth_mode=None, login_server=None, username=None, password=None):
+def get_custom_registry_credentials(cmd,
+                                    auth_mode=None,
+                                    login_server=None,
+                                    username=None,
+                                    password=None,
+                                    kv_username=None,
+                                    kv_password=None,
+                                    identity=None):
     """Get the credential object from the input
     :param str auth_mode: The login mode for the source registry
     :param str login_server: The login server of custom registry
     :param str username: The username for custom registry
     :param str password: The password for custom registry
     """
+
+    if username is not None and kv_username is not None:
+        raise CLIError("Provide either username or kv_username.")
+    if (password is not None and kv_password is not None):
+        raise CLIError("Provide either password or kv_password.")
+
     source_registry_credentials = None
     if auth_mode:
         SourceRegistryCredentials = cmd.get_models('SourceRegistryCredentials')
         source_registry_credentials = SourceRegistryCredentials(login_mode=auth_mode)
 
+    isRemove = False
+    if username is None and password is None and kv_username is None and kv_password is None and identity is None:
+        isRemove = True
     custom_registries = None
     if login_server:
-        CustomRegistryCredentials, SecretObject, SecretObjectType = cmd.get_models(
-            'CustomRegistryCredentials',
-            'SecretObject',
-            'SecretObjectType'
-        )
-
         # if Null username and password, then have it removed
         custom_reg_credential = None
-        if (username and not password) or (password and not username):
-            raise CLIError("Please provide both username and password.")
-        elif username and password:
+
+        if not isRemove:
+            username_type=SecretObjectType.opaque if username is not None else None
+            password_type=SecretObjectType.opaque if password is not None else None
+            if kv_username is not None:
+                user_type=SecretObjectType.vaultsecret
+            if kv_password is not None:
+                password_type=SecretObjectType.vaultsecret
+
             custom_reg_credential = CustomRegistryCredentials(
                 user_name=SecretObject(
-                    type=SecretObjectType.opaque,
-                    value=username
+                    type=username_type,
+                    value=username if username is not None else kv_username
                 ),
                 password=SecretObject(
-                    type=SecretObjectType.opaque,
-                    value=password
-                )
+                    type=password_type,
+                    value=password if password is not None else kv_password
+                ),
+                identity=identity
             )
-        elif username is not None or password is not None:
-            # case where user passes empty strings: -u '' -p ''
-            raise CLIError("username and password cannot be empty")
 
         custom_registries = {login_server: custom_reg_credential}
 
+    print("CREDENTIALS")
+    print(custom_reg_credential)
     Credentials = cmd.get_models('Credentials')
-    return Credentials(
-        source_registry=source_registry_credentials,
-        custom_registries=custom_registries
+    # return Credentials(
+    #     source_registry=source_registry_credentials,
+    #     custom_registries=custom_registries
     )
 
 
