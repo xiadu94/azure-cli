@@ -477,7 +477,7 @@ def acr_task_credential_add(cmd,
                             password=None,
                             kv_username=None,
                             kv_password=None,
-                            identity=None,
+                            use_identity=None,
                             resource_group_name=None):
     _, resource_group_name = validate_managed_registry(
         cmd, registry_name, resource_group_name, TASK_NOT_SUPPORTED)
@@ -495,15 +495,16 @@ def acr_task_credential_add(cmd,
             username=username,
             password=password,
             kv_username=kv_username,
-            identity=identity
+            kv_password=kv_password,
+            identity=use_identity
         )
     )
 
     resp = LongRunningOperation(cmd.cli_ctx)(
-        client.update(resource_group_name, registry_name, task_name, taskUpdateParameters)
+       client.update(resource_group_name, registry_name, task_name, taskUpdateParameters)
     )
     resp = resp.credentials
-    #return {} if not resp else resp.custom_registries
+    return {} if not resp else resp.custom_registries
 
 
 def acr_task_credential_update(cmd,

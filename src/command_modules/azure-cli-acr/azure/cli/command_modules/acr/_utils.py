@@ -420,33 +420,34 @@ def get_custom_registry_credentials(cmd,
         custom_reg_credential = None
 
         if not isRemove:
-            username_type=SecretObjectType.opaque if username is not None else None
-            password_type=SecretObjectType.opaque if password is not None else None
+            username_type = SecretObjectType.opaque if username is not None else None
+            password_type = SecretObjectType.opaque if password is not None else None
             if kv_username is not None:
-                user_type=SecretObjectType.vaultsecret
+                user_type = SecretObjectType.vaultsecret
             if kv_password is not None:
-                password_type=SecretObjectType.vaultsecret
+                password_type = SecretObjectType.vaultsecret
 
             custom_reg_credential = CustomRegistryCredentials(
-                user_name=SecretObject(
-                    type=username_type,
-                    value=username if username is not None else kv_username
-                ),
-                password=SecretObject(
-                    type=password_type,
-                    value=password if password is not None else kv_password
-                ),
+                # user_name=SecretObject(
+                #     type=username_type,
+                #     value=username if username is not None else kv_username
+                # ),
+                # password=SecretObject(
+                #     type=password_type,
+                #     value=password if password is not None else kv_password
+                # ),
                 identity=identity
             )
 
         custom_registries = {login_server: custom_reg_credential}
+        print("CREDENTIALS")
+        print(custom_reg_credential.user_name)
+        print(custom_reg_credential.password)
 
-    print("CREDENTIALS")
-    print(custom_reg_credential)
     Credentials = cmd.get_models('Credentials')
-    # return Credentials(
-    #     source_registry=source_registry_credentials,
-    #     custom_registries=custom_registries
+    return Credentials(
+         source_registry=source_registry_credentials,
+         custom_registries=custom_registries
     )
 
 
