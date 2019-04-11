@@ -59,7 +59,7 @@ DEPENDENCIES = [
     'colorama>=0.3.9',
     'humanfriendly>=4.7',
     'jmespath',
-    'knack>=0.5.3',
+    'knack~=0.5.4',
     'msrest>=0.4.4',
     'msrestazure>=0.4.25',
     'paramiko>=2.0.8',
@@ -72,7 +72,9 @@ DEPENDENCIES = [
     'six',
     'tabulate>=0.7.7',
     'wheel==0.30.0',
-    'azure-mgmt-resource==2.1.0'
+    'azure-mgmt-resource==2.1.0',
+    'pyperclip>=1.7.0',
+    'psutil>=5.6.1'
 ]
 
 with open('README.rst', 'r', encoding='utf-8') as f:
