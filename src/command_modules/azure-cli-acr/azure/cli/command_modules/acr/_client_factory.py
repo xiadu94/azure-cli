@@ -20,7 +20,7 @@ def get_storage_service_client(cli_ctx):
 
 def get_acr_service_client(cli_ctx, api_version=None):
     """Returns the client for managing container registries. """
-    from azure.mgmt.containerregistry import ContainerRegistryManagementClient
+    from .sdk.container_registry_management_client import ContainerRegistryManagementClient
     return get_mgmt_service_client(cli_ctx, ContainerRegistryManagementClient, api_version=api_version)
 
 
@@ -42,3 +42,9 @@ def cf_acr_tasks(cli_ctx, *_):
 
 def cf_acr_runs(cli_ctx, *_):
     return get_acr_service_client(cli_ctx).runs
+
+def cf_acr_scope_maps(cli_ctx, *_):
+    return get_acr_service_client(cli_ctx).scope_maps
+
+def cf_acr_tokens(cli_ctx, *_):
+    return get_acr_service_client(cli_ctx).tokens
