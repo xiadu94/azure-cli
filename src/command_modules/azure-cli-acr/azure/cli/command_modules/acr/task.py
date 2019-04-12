@@ -30,6 +30,7 @@ logger = get_logger(__name__)
 
 TASK_NOT_SUPPORTED = 'Task is only supported for managed registries.'
 DEFAULT_TOKEN_TYPE = 'PAT'
+NULL_CONTEXT = '/dev/null'
 IDENTITY_LOCAL_ID = '[system]'
 
 DEFAULT_TIMEOUT_IN_SEC = 60 * 60  # 60 minutes
