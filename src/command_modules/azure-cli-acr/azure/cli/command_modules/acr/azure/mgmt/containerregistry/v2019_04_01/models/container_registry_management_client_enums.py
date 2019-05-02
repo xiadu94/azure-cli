@@ -137,7 +137,7 @@ class ResourceIdentityType(Enum):
 
     system_assigned = "SystemAssigned"
     user_assigned = "UserAssigned"
-    system_assigned_user_assigned = "SystemAssignedUserAssigned"
+    system_assigned_user_assigned = "SystemAssigned, UserAssigned"
     none = "None"
 
 
@@ -151,6 +151,12 @@ class BaseImageDependencyType(Enum):
 
     build_time = "BuildTime"
     run_time = "RunTime"
+
+
+class TriggerStatus(Enum):
+
+    disabled = "Disabled"
+    enabled = "Enabled"
 
 
 class SourceControlType(Enum):
@@ -169,12 +175,6 @@ class SourceTriggerEvent(Enum):
 
     commit = "commit"
     pullrequest = "pullrequest"
-
-
-class TriggerStatus(Enum):
-
-    disabled = "Disabled"
-    enabled = "Enabled"
 
 
 class BaseImageTriggerType(Enum):
