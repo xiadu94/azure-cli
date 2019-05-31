@@ -169,12 +169,15 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         c.argument('set_value', options_list=['--set'], help="Task value in '--set name[=value]' format. Multiples supported by passing --set multiple times.", action='append', validator=validate_set)
         c.argument('set_secret', help="Secret task value in '--set-secret name[=value]' format. Multiples supported by passing --set-secret multiple times.", action='append', validator=validate_set_secret)
 
-        # Source Trigger parameters
+        # Trigger parameters
         c.argument('source_trigger_name', help="The name of the source trigger.")
         c.argument('commit_trigger_enabled', help="Indicates whether the source control commit trigger is enabled.", arg_type=get_three_state_flag())
         c.argument('pull_request_trigger_enabled', help="Indicates whether the source control pull request trigger is enabled.", arg_type=get_three_state_flag())
         c.argument('git_access_token', help="The access token used to access the source control provider.")
         c.argument('branch', help="The source control branch name.")
+        c.argument('timer_trigger_name', help="The name of the timer trigger.")
+        c.argument('timer_trigger_enabled', help="Indicates whether the timer trigger is enabled.", arg_type=get_three_state_flag())
+        c.argument('timer_trigger_schedule', help="The cron expression representing the schedule for the timer trigger.")
         c.argument('base_image_trigger_name', help="The name of the base image trigger.")
         c.argument('base_image_trigger_enabled', help="Indicates whether the base image trigger is enabled.", arg_type=get_three_state_flag())
         c.argument('base_image_trigger_type', help="The type of the auto trigger for base image dependency updates.", arg_type=get_enum_type(BaseImageTriggerType))

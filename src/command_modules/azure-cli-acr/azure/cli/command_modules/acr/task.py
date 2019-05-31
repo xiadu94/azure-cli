@@ -56,6 +56,9 @@ def acr_task_create(cmd,  # pylint: disable=too-many-locals
                     secret_arg=None,
                     set_value=None,
                     set_secret=None,
+                    timer_trigger_name='defaultTimerTriggerName',
+                    timer_trigger_enabled=False,
+                    timer_trigger_schedule=None,
                     base_image_trigger_name='defaultBaseimageTriggerName',
                     base_image_trigger_enabled=True,
                     base_image_trigger_type='Runtime',
@@ -153,6 +156,16 @@ def acr_task_create(cmd,  # pylint: disable=too-many-locals
             )
         ]
 
+    timer_trigger = None
+    if timer_trigger_enabled:
+        TimerTrigger, TriggerStatus = cmd.get_models(
+            'TimerTrigger', 'TriggerStatus')
+        timer_trigger = TimerTrigger(
+            schedule=timer_trigger_schedule,
+            status=TriggerStatus.enabled.value if timer_trigger_enabled else TriggerStatus.disabled.value,
+            name=timer_trigger_name
+        )
+
     base_image_trigger = None
     if base_image_trigger_enabled:
         BaseImageTrigger, TriggerStatus = cmd.get_models(
@@ -188,6 +201,7 @@ def acr_task_create(cmd,  # pylint: disable=too-many-locals
         ),
         trigger=TriggerProperties(
             source_triggers=source_triggers,
+            timer_triggers=timer_trigger,
             base_image_trigger=base_image_trigger
         ),
         credentials=get_custom_registry_credentials(
