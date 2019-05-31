@@ -160,11 +160,13 @@ def acr_task_create(cmd,  # pylint: disable=too-many-locals
     if timer_trigger_enabled:
         TimerTrigger, TriggerStatus = cmd.get_models(
             'TimerTrigger', 'TriggerStatus')
-        timer_trigger = TimerTrigger(
-            schedule=timer_trigger_schedule,
-            status=TriggerStatus.enabled.value if timer_trigger_enabled else TriggerStatus.disabled.value,
-            name=timer_trigger_name
-        )
+        timer_trigger = [
+            TimerTrigger(
+                schedule=timer_trigger_schedule,
+                status=TriggerStatus.enabled.value if timer_trigger_enabled else TriggerStatus.disabled.value,
+                name=timer_trigger_name
+            )
+        ]
 
     base_image_trigger = None
     if base_image_trigger_enabled:
