@@ -229,8 +229,8 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         c.argument('ip_address', help='IPv4 address or CIDR range.')
 
     with self.argument_context('acr check-health') as c:
-        c.argument('ignore_errors', options_list=['--ignore-errors'], help='Ignore errors, displaying them only at the final', action='store_true', required=False)
-    
+        c.argument('ignore_errors', options_list=['--ignore-errors'], help='Ignore errors, not stopping at first error', action='store_true', required=False)
+
     with self.argument_context('acr scope-map') as c:
         c.argument('registry_name', options_list=['--registryName', '-r'])
         c.argument('description', options_list=['--description'], help='Description for the scope map. Max of 140 characters.', required=False)
@@ -238,6 +238,9 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         c.argument('remove_repository', nargs='+', options_list=['--remove'], help='Repositories to be removed. Add tuples (repository,action1,action2,...) separated by space.', required=False)
         c.argument('reset_map', options_list=['--reset'], help='Flag indicating whether scope map should be reset (erase all configurations)', action='store_true', required=False)
         c.argument('scope_map_name', options_list=['--name', '-n'], help='The name of the target scope map.', required=True)
+
+    with self.argument_context('acr scope-map create') as c:
+        c.argument('add_repository', nargs='+', options_list=['--add'], help='Repositories to be added. Add tuples (repository,action1,action2,...) separated by space.', required=True)
 
     with self.argument_context('acr token') as c:
         c.argument('registry_name', options_list=['--registryName', '-r'])
@@ -250,8 +253,8 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
     with self.argument_context('acr token credential generate') as c:
         c.argument('password1', options_list=['--password1'], help='Flag indicating if password1 should be generated.', action='store_true', required=False)
         c.argument('password2', options_list=['--password2'], help='Flag indicating if password2 should be generated.', action='store_true', required=False)
-        c.argument('expiry', options_list=['--expiry'], help='Finer grain of expiry time if \'--years\' is insufficient, e.g. \'2220-12-31T11:59:59+00:00\' or \'2299-12-31\'', required=False)
-        c.argument('years', options_list=['--years'], help='Number of years for which the credentials will be valid.', type=int, required=False)
+        c.argument('expiry', options_list=['--expiry'], help='Finer grain of expiry time if \'--months\' is insufficient, e.g. \'2220-12-31T11:59:59+00:00\' or \'2299-12-31\'', required=False)
+        c.argument('months', options_list=['--months'], help='Number of months for which the credentials will be valid.', type=int, required=False)
 
     with self.argument_context('acr token credential add-certificate') as c:
         c.argument('target_certificate', options_list=['-t', '--target-cert'], help='Target certificate to be added. Allowed values are "certificate1" and "certificate2"', required=True)

@@ -16,10 +16,9 @@ def acr_token_create(cmd,
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
 
-    from ._constants import REGISTRY_RESOURCE_TYPE
-    from ._utils import _arm_get_resource_by_name
+    from ._utils import get_resource_id_by_registry_name
 
-    token_create_parameters = { 
+    token_create_parameters = {
         "Properties": {
             "ScopeMapId": None,
             "Credentials": {
@@ -28,21 +27,25 @@ def acr_token_create(cmd,
         }
     }
 
+    scope_map_id = None
     if scope_map_name:
-        arm_resource = _arm_get_resource_by_name(cmd.cli_ctx, registry_name, REGISTRY_RESOURCE_TYPE)
-        scope_map_id = arm_resource.id + "/scopeMaps/" + scope_map_name
+        arm_resource_id = get_resource_id_by_registry_name(cmd.cli_ctx, registry_name)
+        scope_map_id = arm_resource_id + "/scopeMaps/" + scope_map_name
         token_create_parameters["Properties"]["ScopeMapId"] = scope_map_id
+    else:
+        from knack.prompting import prompt_y_n
+        confirmation = prompt_y_n("A token without a scope map does not have access to any resource"
+                                  " on the registry. Proceed?")
 
-    from msrest.exceptions import ValidationError
-    try:
-        return client.create(
-            resource_group_name,
-            registry_name,
-            token_name,
-            token_create_parameters
-        )
-    except ValidationError as e:
-        raise CLIError(e)
+        if confirmation in ['N', 'n']:
+            return
+
+    return client.create(
+        resource_group_name,
+        registry_name,
+        token_name,
+        token_create_parameters
+    )
 
 
 def acr_token_delete(cmd,
@@ -52,6 +55,14 @@ def acr_token_delete(cmd,
                      resource_group_name=None):
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
+
+    from knack.prompting import prompt_y_n
+    confirmation = prompt_y_n("Deleting a token will invalidate access to anyone using this token's credentials."
+                              " Proceed?")
+
+    if confirmation in ['N', 'n']:
+        return
+
     return client.delete(resource_group_name, registry_name, token_name)
 
 
@@ -64,27 +75,21 @@ def acr_token_update(cmd,
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
 
-    from ._constants import REGISTRY_RESOURCE_TYPE
-    from ._utils import _arm_get_resource_by_name
+    from ._utils import get_resource_id_by_registry_name
 
-    if scope_map_name is not None:
-        arm_resource = _arm_get_resource_by_name(cmd.cli_ctx, registry_name, REGISTRY_RESOURCE_TYPE)
-        scope_map_id = arm_resource.id + "/scopeMaps/" + scope_map_name
-    else:
-        scope_map_id = None
+    scope_map_id = None
+    if scope_map_name:
+        arm_resource_id = get_resource_id_by_registry_name(cmd.cli_ctx, registry_name)
+        scope_map_id = arm_resource_id + "/scopeMaps/" + scope_map_name
 
-    token_update_parameters = { "ScopeMapId": scope_map_id }
+    token_update_parameters = {"ScopeMapId": scope_map_id}
 
-    from msrest.exceptions import ValidationError
-    try:
-        return client.update(
-            resource_group_name,
-            registry_name,
-            token_name,
-            token_update_parameters
-        )
-    except ValidationError as e:
-        raise CLIError(e)
+    return client.update(
+        resource_group_name,
+        registry_name,
+        token_name,
+        token_update_parameters
+    )
 
 
 def acr_token_show(cmd,
@@ -95,15 +100,11 @@ def acr_token_show(cmd,
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
 
-    from msrest.exceptions import ValidationError
-    try:
-        return client.get(
-            resource_group_name,
-            registry_name,
-            token_name
-        )
-    except ValidationError as e:
-        raise CLIError(e)
+    return client.get(
+        resource_group_name,
+        registry_name,
+        token_name
+    )
 
 
 def acr_token_list(cmd,
@@ -113,14 +114,10 @@ def acr_token_list(cmd,
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
 
-    from msrest.exceptions import ValidationError
-    try:
-        return client.list(
-            resource_group_name,
-            registry_name
-        )
-    except ValidationError as e:
-        raise CLIError(e)
+    return client.list(
+        resource_group_name,
+        registry_name
+    )
 
 
 # Credential functions
@@ -133,16 +130,14 @@ def acr_token_credential_generate(cmd,
                                   password1=False,
                                   password2=False,
                                   expiry=None,
-                                  years=None,
+                                  months=None,
                                   resource_group_name=None):
 
-    from ._constants import REGISTRY_RESOURCE_TYPE
-    from ._utils import _arm_get_resource_by_name
-    from msrest.exceptions import ValidationError
+    from ._utils import get_resource_id_by_registry_name
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
-    arm_resource = _arm_get_resource_by_name(cmd.cli_ctx, registry_name, REGISTRY_RESOURCE_TYPE)
-    token_id = arm_resource.id + "/tokens/" + token_name
+    arm_resource_id = get_resource_id_by_registry_name(cmd.cli_ctx, registry_name)
+    token_id = arm_resource_id + "/tokens/" + token_name
     generate_credentials_parameters = {"TokenId": token_id}
 
     if password1 ^ password2: # We only want to specify a password if only one wass passed.
@@ -150,22 +145,15 @@ def acr_token_credential_generate(cmd,
 
     if expiry:
         generate_credentials_parameters["Expiry"] = expiry
-    elif years is not None:
-        if int(years) <= 0:
-            raise CLIError("Number of years must be positive.")
-        from datetime import datetime
-        expiry_date = datetime.now()
-        expiry_date = expiry_date.replace(year=min(expiry_date.year + int(years), 9999))
-        generate_credentials_parameters["Expiry"] = expiry_date.isoformat(sep='T')
+    elif months is not None:
+        from ._utils import add_months_to_now
+        generate_credentials_parameters["Expiry"] = add_months_to_now(months).isoformat(sep='T')
 
-    try:
-        return client.generate_credentials(
-            resource_group_name,
-            registry_name,
-            generate_credentials_parameters
-        )
-    except ValidationError as e:
-        raise CLIError(e)
+    return client.generate_credentials(
+        resource_group_name,
+        registry_name,
+        generate_credentials_parameters
+    )
 
 
 def acr_token_credential_delete(cmd,
@@ -218,16 +206,12 @@ def acr_token_credential_delete(cmd,
         }
     }
 
-    from msrest.exceptions import ValidationError
-    try:
-        return client.update(
-            resource_group_name,
-            registry_name,
-            token_name,
-            token_update_parameters
-        )
-    except ValidationError as e:
-        raise CLIError(e)
+    return client.update(
+        resource_group_name,
+        registry_name,
+        token_name,
+        token_update_parameters
+    )
 
 
 def acr_token_credential_add_certificate(cmd,
@@ -258,17 +242,13 @@ def acr_token_credential_add_certificate(cmd,
             "Certificates": certificates_payload
         }
     }
-    
-    from msrest.exceptions import ValidationError
-    try:
-        return client.update(
-            resource_group_name,
-            registry_name,
-            token_name,
-            token_update_parameters
-        )
-    except ValidationError as e:
-        raise CLIError(e)
+
+    return client.update(
+        resource_group_name,
+        registry_name,
+        token_name,
+        token_update_parameters
+    )
 
 
 def _get_key_vault_client(cli_ctx):
@@ -284,7 +264,6 @@ def _get_key_vault_client(cli_ctx):
 
 
 def _create_self_signed_cert_with_keyvault(kv_client, vault_url, certificate):
-    print(vault_url, certificate)
     cert_policy = {
         'attributes': {
             'enabled': True

@@ -984,8 +984,8 @@ helps['acr token credential generate'] = """
 type: command
 short-summary: Generate both passwords for a token under an Azure Container Registry, unless one password is specified. Replaces old values if they existed. If expiry is not specified, it will be defaulted to the max value.
 examples:
-  - name: Generate passowrd1 for the token 'myToken', with expiration for 2 years.
-    text: az acr token credential generate -r myRegistry -n myToken --password1 --years 2
+  - name: Generate password1 for the token 'myToken', with expiration for 2 years.
+    text: az acr token credential generate -r myRegistry -n myToken --password1 --months 24
 """
 
 helps['acr token credential add-certificate'] = """
@@ -1001,5 +1001,5 @@ type: command
 short-summary: Delete a token credential. To be used upon expiration, loss or leak of information.
 examples:
   - name: Delete both passwords for the token 'myToken'.
-    text: az acr token credential reset -r myRegistry -n myToken --password1 --password2
+    text: az acr token credential delete -r myRegistry -n myToken --password1 --password2
 """

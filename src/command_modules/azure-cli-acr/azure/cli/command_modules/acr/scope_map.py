@@ -7,10 +7,11 @@ from azure.cli.core.util import CLIError
 from ._utils import get_resource_group_name_by_registry_name
 
 
-def _validate_and_generate_actions_for_repositories(allow_or_deny_respository):
+def _parse_actions_from_repositories(allow_or_remove_repository):
     actions = []
 
-    for rule in allow_or_deny_respository:
+    allow_or_remove_repository.sort()
+    for rule in allow_or_remove_repository:
         splitted = rule.split(';', 1)
         if len(splitted) != 2:
             return False, rule
@@ -29,24 +30,19 @@ def acr_scope_map_create(cmd,
                          resource_group_name=None,
                          description=None):
 
-    validated, actions = _validate_and_generate_actions_for_repositories(add_repository)
+    validated, actions = _parse_actions_from_repositories(add_repository)
     if not validated:
         raise CLIError("Rule {} has invalid syntax.".format(actions))
-    actions.sort()
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
 
-    from msrest.exceptions import ValidationError
-    try:
-        return client.create(
-            resource_group_name,
-            registry_name,
-            scope_map_name,
-            actions,
-            description
-        )
-    except ValidationError as e:
-        raise CLIError(e)
+    return client.create(
+        resource_group_name,
+        registry_name,
+        scope_map_name,
+        actions,
+        description
+    )
 
 
 def acr_scope_map_delete(cmd,
@@ -56,7 +52,8 @@ def acr_scope_map_delete(cmd,
                          resource_group_name=None):
 
     from knack.prompting import prompt_y_n
-    confirmation = prompt_y_n("Deleting the scope map '{}' will remove its permissions with associated tokens. Are you sure you want to proceed?")
+    confirmation = prompt_y_n("Deleting the scope map '{}' will remove its permissions with associated tokens."
+                              " Are you sure you want to proceed?".format(scope_map_name))
 
     if confirmation in ['N', 'n']:
         return
@@ -79,45 +76,43 @@ def acr_scope_map_update(cmd,
         raise CLIError("At least one of the following parameters must be provided: " +
                        "--add, --remove, --reset, --description.")
 
-    current_scope_map = acr_scope_map_show(cmd, client, registry_name, scope_map_name, resource_group_name)
-
     if reset_map:
         current_actions = []
     else:
+        current_scope_map = acr_scope_map_show(cmd, client, registry_name, scope_map_name, resource_group_name)
         current_actions = current_scope_map.actions
 
-    if description is None:
-        description = current_scope_map.description
-    else:
-        description = ' '.join(description)
-
-    if remove_repository is not None:
-        validated, removed_actions = _validate_and_generate_actions_for_repositories(remove_repository)
+    if remove_repository:
+        validated, removed_actions = _parse_actions_from_repositories(remove_repository)
         if not validated:
             raise CLIError("Rule {} has invalid syntax.".format(removed_actions))
-        current_actions = list(set(current_actions) - set(removed_actions))
+        # We have to treat actions case-insensitively but list them case-sensitively
+        lower_current_actions = set([action.lower() for action in current_actions])
+        lower_removed_actions = set([action.lower() for action in removed_actions])
+        current_actions = [action for action in current_actions
+                           if action.lower() in lower_current_actions - lower_removed_actions]
 
-    if add_repository is not None:
-        validated, added_actions = _validate_and_generate_actions_for_repositories(add_repository)
+    if add_repository:
+        validated, added_actions = _parse_actions_from_repositories(add_repository)
         if not validated:
             raise CLIError("Rule {} has invalid syntax.".format(added_actions))
-        current_actions = list(set(current_actions) | set(added_actions))
-
-    current_actions.sort()
+        # We have to avoid duplicates and give preference to user input casing
+        lower_action_to_action = {}
+        for action in current_actions:
+            lower_action_to_action[action.lower()] = action
+        for action in added_actions:
+            lower_action_to_action[action.lower()] = action
+        current_actions = [lower_action_to_action[action] for action in lower_action_to_action]
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
 
-    from msrest.exceptions import ValidationError
-    try:
-        return client.update(
-            resource_group_name,
-            registry_name,
-            scope_map_name,
-            description,
-            current_actions
-        )
-    except ValidationError as e:
-        raise CLIError(e)
+    return client.update(
+        resource_group_name,
+        registry_name,
+        scope_map_name,
+        description,
+        current_actions
+    )
 
 
 def acr_scope_map_show(cmd,
@@ -128,15 +123,11 @@ def acr_scope_map_show(cmd,
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
 
-    from msrest.exceptions import ValidationError
-    try:
-        return client.get(
-            resource_group_name,
-            registry_name,
-            scope_map_name
-        )
-    except ValidationError as e:
-        raise CLIError(e)
+    return client.get(
+        resource_group_name,
+        registry_name,
+        scope_map_name
+    )
 
 
 def acr_scope_map_list(cmd,
@@ -146,11 +137,7 @@ def acr_scope_map_list(cmd,
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
 
-    from msrest.exceptions import ValidationError
-    try:
-        return client.list(
-            resource_group_name,
-            registry_name
-        )
-    except ValidationError as e:
-        raise CLIError(e)
+    return client.list(
+        resource_group_name,
+        registry_name
+    )
