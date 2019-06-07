@@ -6,6 +6,9 @@
 from azure.cli.core.commands.client_factory import get_mgmt_service_client
 
 
+API_2019_05_01_PREVIEW = "2019-05-01-preview"
+
+
 def get_arm_service_client(cli_ctx):
     """Returns the client for managing ARM resources. """
     from azure.mgmt.resource import ResourceManagementClient
@@ -20,7 +23,7 @@ def get_storage_service_client(cli_ctx):
 
 def get_acr_service_client(cli_ctx, api_version=None):
     """Returns the client for managing container registries. """
-    from .sdk.container_registry_management_client import ContainerRegistryManagementClient
+    from azure.mgmt.containerregistry import ContainerRegistryManagementClient
     return get_mgmt_service_client(cli_ctx, ContainerRegistryManagementClient, api_version=api_version)
 
 
@@ -43,8 +46,14 @@ def cf_acr_tasks(cli_ctx, *_):
 def cf_acr_runs(cli_ctx, *_):
     return get_acr_service_client(cli_ctx).runs
 
+
 def cf_acr_scope_maps(cli_ctx, *_):
     return get_acr_service_client(cli_ctx).scope_maps
 
+
 def cf_acr_tokens(cli_ctx, *_):
     return get_acr_service_client(cli_ctx).tokens
+
+
+def cf_acr_token_credentials(cli_ctx, *_):
+    return get_acr_service_client(cli_ctx, API_2019_05_01_PREVIEW).registries

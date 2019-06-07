@@ -28,7 +28,8 @@ from ._client_factory import (
     cf_acr_tasks,
     cf_acr_runs,
     cf_acr_scope_maps,
-    cf_acr_tokens
+    cf_acr_tokens,
+    cf_acr_token_credentials
 )
 
 
@@ -127,7 +128,7 @@ def load_command_table(self, _):  # pylint: disable=too-many-statements
     acr_token_credential_generate_util = CliCommandType(
         operations_tmpl='azure.cli.command_modules.acr.token#{}',
         table_transformer=credential_output_format,
-        client_factory=cf_acr_registries
+        client_factory=cf_acr_token_credentials
     )
 
     with self.command_group('acr', acr_custom_util) as g:
@@ -250,7 +251,7 @@ def load_command_table(self, _):  # pylint: disable=too-many-statements
         g.command('update', 'acr_scope_map_update')
         g.command('show', 'acr_scope_map_show')
         g.command('list', 'acr_scope_map_list')
-    
+
     with self.command_group('acr token', acr_token_util, is_preview=True) as g:
         g.command('create', 'acr_token_create')
         g.command('delete', 'acr_token_delete')
