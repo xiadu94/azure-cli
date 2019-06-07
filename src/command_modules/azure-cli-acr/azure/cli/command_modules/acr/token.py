@@ -57,7 +57,7 @@ def acr_token_delete(cmd,
     confirmation = prompt_y_n("Deleting a token will invalidate access to anyone using this token's credentials."
                               " Proceed?")
 
-    if confirmation in ['N', 'n']:
+    if not confirmation:
         return
 
     return client.delete(resource_group_name, registry_name, token_name)
@@ -75,12 +75,13 @@ def acr_token_update(cmd,
 
     from ._utils import get_resource_id_by_registry_name
 
+    token_update_parameters = {}
+
     scope_map_id = None
     if scope_map_name:
         arm_resource_id = get_resource_id_by_registry_name(cmd.cli_ctx, registry_name)
         scope_map_id = arm_resource_id + "/scopeMaps/" + scope_map_name
-
-    token_update_parameters = {"ScopeMapId": scope_map_id}
+        token_update_parameters["ScopeMapId"] = scope_map_id
 
     if status:
         if status not in ["enabled", "disabled"]:

@@ -55,7 +55,7 @@ def acr_scope_map_delete(cmd,
     confirmation = prompt_y_n("Deleting the scope map '{}' will remove its permissions with associated tokens."
                               " Are you sure you want to proceed?".format(scope_map_name))
 
-    if confirmation in ['N', 'n']:
+    if not confirmation:
         return
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
