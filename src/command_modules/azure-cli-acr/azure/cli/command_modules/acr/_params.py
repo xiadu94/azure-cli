@@ -234,18 +234,22 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
     with self.argument_context('acr scope-map') as c:
         c.argument('registry_name', options_list=['--registryName', '-r'])
         c.argument('description', options_list=['--description'], help='Description for the scope map. Max of 140 characters.', required=False)
-        c.argument('add_repository', nargs='+', options_list=['--add'], help='Repositories to be added. Add tuples (repository,action1,action2,...) separated by space.', required=False)
-        c.argument('remove_repository', nargs='+', options_list=['--remove'], help='Repositories to be removed. Add tuples (repository,action1,action2,...) separated by space.', required=False)
+        c.argument('add_repository', nargs='+', options_list=['--add'], help='Repositories to be added. Add tuples (repository;action1,action2,...) separated by space.', required=False)
+        c.argument('remove_repository', nargs='+', options_list=['--remove'], help='Repositories to be removed. Add tuples (repository;action1,action2,...) separated by space.', required=False)
         c.argument('reset_map', options_list=['--reset'], help='Flag indicating whether scope map should be reset (erase all configurations)', action='store_true', required=False)
         c.argument('scope_map_name', options_list=['--name', '-n'], help='The name of the target scope map.', required=True)
 
     with self.argument_context('acr scope-map create') as c:
-        c.argument('add_repository', nargs='+', options_list=['--add'], help='Repositories to be added. Add tuples (repository,action1,action2,...) separated by space.', required=True)
+        c.argument('add_repository', nargs='+', options_list=['--add'], help='Repositories to be added. Add tuples (repository;action1,action2,...) separated by space.', required=True)
 
     with self.argument_context('acr token') as c:
         c.argument('registry_name', options_list=['--registryName', '-r'])
         c.argument('token_name', options_list=['--name', '-n'], help='The name of the target token.', required=True)
         c.argument('scope_map_name', options_list=['--scope-map'], help='The name of the scope map associated with the token', required=False)
+        c.argument('status', options_list=['--status'], help='The status of the token. Allowed values are "enabled" or "disabled".', required=False)
+
+    with self.argument_context('acr token create') as c:
+        c.argument('scope_map_name', options_list=['--scope-map'], help='The name of the scope map associated with the token', required=True)
 
     with self.argument_context('acr token update') as c:
         c.argument('scope_map_name', options_list=['--scope-map'], help='The name of the scope map associated with the token. If not specified, running this command will disassociate the current scope map related to the token.', required=False)
@@ -258,12 +262,12 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
 
     with self.argument_context('acr token credential add-certificate') as c:
         c.argument('target_certificate', options_list=['-t', '--target-cert'], help='Target certificate to be added. Allowed values are "certificate1" and "certificate2"', required=True)
-        c.argument('certificate', options_list=['-c', '--cert'], help='Certificate name under target keyvault. If \'keyvault\' is not specified, this should be the path to a local certificate.', required=True)
+        c.argument('certificate', options_list=['-c', '--certificate'], help='Certificate name under target keyvault. If \'keyvault\' is not specified, this should be the path to a local certificate.', required=True)
         c.argument('key_vault', options_list=['-k', '--key-vault'], help='Target key vault', required=False)
         c.argument('create_certificate', options_list=['--create-cert'], help='Flag indicating if a new self-signed certificate should be created', action='store_true', required=False)
 
     with self.argument_context('acr token credential delete') as c:
-        c.argument('certificate1', options_list=['--cert1'], help='Flag indicating if first certificate should be deleted.', action='store_true', required=False)
-        c.argument('certificate2', options_list=['--cert2'], help='Flag indicating if second certificate should be deleted.', action='store_true', required=False)
+        c.argument('certificate1', options_list=['--certificate1'], help='Flag indicating if first certificate should be deleted.', action='store_true', required=False)
+        c.argument('certificate2', options_list=['--certificate2'], help='Flag indicating if second certificate should be deleted.', action='store_true', required=False)
         c.argument('password1', options_list=['--password1'], help='Flag indicating if first password should be deleted', action='store_true', required=False)
         c.argument('password2', options_list=['--password2'], help='Flag indicating if second password should be deleted.', action='store_true', required=False)

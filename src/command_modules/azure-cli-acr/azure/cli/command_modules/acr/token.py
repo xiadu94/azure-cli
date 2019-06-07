@@ -11,7 +11,8 @@ def acr_token_create(cmd,
                      client,
                      registry_name,
                      token_name,
-                     scope_map_name=None,
+                     scope_map_name,
+                     status=None,
                      resource_group_name=None):
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
@@ -27,18 +28,14 @@ def acr_token_create(cmd,
         }
     }
 
-    scope_map_id = None
-    if scope_map_name:
-        arm_resource_id = get_resource_id_by_registry_name(cmd.cli_ctx, registry_name)
-        scope_map_id = arm_resource_id + "/scopeMaps/" + scope_map_name
-        token_create_parameters["Properties"]["ScopeMapId"] = scope_map_id
-    else:
-        from knack.prompting import prompt_y_n
-        confirmation = prompt_y_n("A token without a scope map does not have access to any resource"
-                                  " on the registry. Proceed?")
+    arm_resource_id = get_resource_id_by_registry_name(cmd.cli_ctx, registry_name)
+    scope_map_id = arm_resource_id + "/scopeMaps/" + scope_map_name
+    token_create_parameters["Properties"]["ScopeMapId"] = scope_map_id
 
-        if confirmation in ['N', 'n']:
-            return
+    if status:
+        if status not in ["enabled", "disabled"]:
+            raise CLIError("Unkown status: {}. Allowed values are 'enabled' or 'disabled'.".format(status))
+        token_create_parameters["Properties"]["Status"] = status
 
     return client.create(
         resource_group_name,
@@ -71,6 +68,7 @@ def acr_token_update(cmd,
                      registry_name,
                      token_name,
                      scope_map_name=None,
+                     status=None,
                      resource_group_name=None):
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
@@ -83,6 +81,11 @@ def acr_token_update(cmd,
         scope_map_id = arm_resource_id + "/scopeMaps/" + scope_map_name
 
     token_update_parameters = {"ScopeMapId": scope_map_id}
+
+    if status:
+        if status not in ["enabled", "disabled"]:
+            raise CLIError("Unkown status: {}. Allowed values are 'enabled' or 'disabled'.".format(status))
+        token_update_parameters["Status"] = status
 
     return client.update(
         resource_group_name,
