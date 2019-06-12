@@ -34,7 +34,7 @@ def acr_scope_map_create(cmd,
     if not validated:
         raise CLIError("Rule {} has invalid syntax.".format(actions))
 
-    resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
 
     return client.create(
         resource_group_name,
@@ -49,16 +49,18 @@ def acr_scope_map_delete(cmd,
                          client,
                          registry_name,
                          scope_map_name,
+                         yes=None,
                          resource_group_name=None):
 
-    from knack.prompting import prompt_y_n
-    confirmation = prompt_y_n("Deleting the scope map '{}' will remove its permissions with associated tokens."
-                              " Are you sure you want to proceed?".format(scope_map_name))
+    if not yes:
+        from knack.prompting import prompt_y_n
+        confirmation = prompt_y_n("Deleting the scope map '{}' will remove its permissions with associated tokens. "
+                                  "Proceed?".format(scope_map_name))
 
-    if not confirmation:
-        return
+        if not confirmation:
+            return
 
-    resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
     return client.delete(resource_group_name, registry_name, scope_map_name)
 
 
@@ -104,7 +106,7 @@ def acr_scope_map_update(cmd,
             lower_action_to_action[action.lower()] = action
         current_actions = [lower_action_to_action[action] for action in lower_action_to_action]
 
-    resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
 
     return client.update(
         resource_group_name,
@@ -121,7 +123,7 @@ def acr_scope_map_show(cmd,
                        scope_map_name,
                        resource_group_name=None):
 
-    resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
 
     return client.get(
         resource_group_name,
@@ -135,7 +137,7 @@ def acr_scope_map_list(cmd,
                        registry_name,
                        resource_group_name=None):
 
-    resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
 
     return client.list(
         resource_group_name,

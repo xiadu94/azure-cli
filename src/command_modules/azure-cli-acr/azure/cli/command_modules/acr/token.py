@@ -15,7 +15,7 @@ def acr_token_create(cmd,
                      status=None,
                      resource_group_name=None):
 
-    resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
 
     from ._utils import get_resource_id_by_registry_name
 
@@ -49,17 +49,18 @@ def acr_token_delete(cmd,
                      client,
                      registry_name,
                      token_name,
+                     yes=None,
                      resource_group_name=None):
 
-    resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
+    if not yes:
+        from knack.prompting import prompt_y_n
+        confirmation = prompt_y_n("Deleting the token '{}' will invalidate access to anyone using its credentials. "
+                                  "Proceed?".format(token_name))
 
-    from knack.prompting import prompt_y_n
-    confirmation = prompt_y_n("Deleting a token will invalidate access to anyone using this token's credentials."
-                              " Proceed?")
+        if not confirmation:
+            return
 
-    if not confirmation:
-        return
-
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
     return client.delete(resource_group_name, registry_name, token_name)
 
 
@@ -71,7 +72,7 @@ def acr_token_update(cmd,
                      status=None,
                      resource_group_name=None):
 
-    resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
 
     from ._utils import get_resource_id_by_registry_name
 
@@ -102,7 +103,7 @@ def acr_token_show(cmd,
                    token_name,
                    resource_group_name=None):
 
-    resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
 
     return client.get(
         resource_group_name,
@@ -116,7 +117,7 @@ def acr_token_list(cmd,
                    registry_name,
                    resource_group_name=None):
 
-    resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
 
     return client.list(
         resource_group_name,
@@ -139,7 +140,7 @@ def acr_token_credential_generate(cmd,
 
     from ._utils import get_resource_id_by_registry_name
 
-    resource_group_name = get_resource_group_name_by_registry_name(cmd, registry_name, resource_group_name)
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
     arm_resource_id = get_resource_id_by_registry_name(cmd.cli_ctx, registry_name)
     token_id = arm_resource_id + "/tokens/" + token_name
     generate_credentials_parameters = {"TokenId": token_id}
