@@ -884,9 +884,9 @@ helps['acr scope-map create'] = """
 type: command
 short-summary: Create a scope map for an Azure Container Registry.
 examples:
-  - name: Create a scope map that allows write and contentRead operations for `hello-world` repository, and pull operations for `hello/world`.
+  - name: Create a scope map that allows write and contentRead actions for `hello-world` repository, and read action for `hello-world-again`.
     text: >
-        az acr scope-map create -r MyRegistry -n MyScopeMap --add hello-world;write,contentRead hello/world;pull --description "Sample scope map."
+        az acr scope-map create -r MyRegistry -n MyScopeMap --add hello-world;write,contentRead hello-world-again;read --description "Sample scope map."
 """
 
 helps['acr scope-map delete'] = """
@@ -900,7 +900,7 @@ examples:
 
 helps['acr scope-map update'] = """
 type: command
-short-summary: Update a scope map under an Azure Container Registry, appending/removing actions specified. If flag "--reset" is given, running this command will override the current scope map with given description/actions.
+short-summary: Update a scope map under an Azure Container Registry, appending/removing specified actions. If flag "--reset" is given, running this command will override the current scope map with given description/actions.
 examples:
   - name: Update the scope map 'MyScopeMap' replacing old actions with 'repositories/hello-world/write' and 'repositories/hello-world/read'.
     text: >
@@ -952,9 +952,9 @@ helps['acr token update'] = """
 type: command
 short-summary: Update a token under an Azure Container Registry, replacing the scope map associated to it.
 examples:
-  - name: Update the token 'MyToken', making it associated with the scope map 'MyScopeMap'.
+  - name: Update the token 'MyToken', making it associated with the scope map 'MyNewScopeMap'.
     text: >
-        az acr token update -r MyRegistry -n MyToken --scope-map MyScopeMap
+        az acr token update -r MyRegistry -n MyToken --scope-map MyNewScopeMap
 """
 
 helps['acr token show'] = """
@@ -982,7 +982,7 @@ short-summary: Manage credentials entities for a token under an Azure Container 
 
 helps['acr token credential generate'] = """
 type: command
-short-summary: Generate both passwords for a token under an Azure Container Registry, unless one password is specified. Replaces old values if they existed. If expiry is not specified, it will be defaulted to the max value.
+short-summary: Generate both passwords for a token under an Azure Container Registry, unless one password is specified. Replaces old values if they already exists. If expiry is not specified, it will be defaulted to the max value "9999-12-31T23:59:59.9999+00:00".
 examples:
   - name: Generate password1 for the token 'MyToken', with expiration for 2 years.
     text: az acr token credential generate -r MyRegistry -n myToken --password1 --months 24
@@ -990,7 +990,7 @@ examples:
 
 helps['acr token credential add-certificate'] = """
 type: command
-short-summary: Add a certificate in a PEM format for a token under an Azure Container Registry. If target certificate already existed, it will be replaced with the new one.
+short-summary: Add a certificate in a PEM format for a token under an Azure Container Registry. If target certificate already exists, it will be replaced with the new one.
 examples:
   - name: Add certificate1 for the token 'MyToken'.
     text: az acr token credential add-certificate -r MyRegistry -n MyToken --cert1 C:\\myCertificates\\certificate.pem

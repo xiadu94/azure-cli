@@ -19,7 +19,10 @@ from ._format import (
     task_output_format,
     run_output_format,
     helm_list_output_format,
-    helm_show_output_format
+    helm_show_output_format,
+    scope_map_output_format,
+    token_output_format,
+    token_password_output_format
 )
 from ._client_factory import (
     cf_acr_registries,
@@ -117,17 +120,19 @@ def load_command_table(self, _):  # pylint: disable=too-many-statements
 
     acr_scope_map_util = CliCommandType(
         operations_tmpl='azure.cli.command_modules.acr.scope_map#{}',
+        table_transformer=scope_map_output_format,
         client_factory=cf_acr_scope_maps
     )
 
     acr_token_util = CliCommandType(
         operations_tmpl='azure.cli.command_modules.acr.token#{}',
+        table_transformer=token_output_format,
         client_factory=cf_acr_tokens
     )
 
     acr_token_credential_generate_util = CliCommandType(
         operations_tmpl='azure.cli.command_modules.acr.token#{}',
-        table_transformer=credential_output_format,
+        table_transformer=token_password_output_format,
         client_factory=cf_acr_token_credentials
     )
 

@@ -70,19 +70,11 @@ def acr_scope_map_update(cmd,
                          scope_map_name,
                          add_repository=None,
                          remove_repository=None,
-                         reset_map=None,
                          resource_group_name=None,
                          description=None):
 
-    if not (add_repository or remove_repository or reset_map or description):
-        raise CLIError("At least one of the following parameters must be provided: " +
-                       "--add, --remove, --reset, --description.")
-
-    if reset_map:
-        current_actions = []
-    else:
-        current_scope_map = acr_scope_map_show(cmd, client, registry_name, scope_map_name, resource_group_name)
-        current_actions = current_scope_map.actions
+    current_scope_map = acr_scope_map_show(cmd, client, registry_name, scope_map_name, resource_group_name)
+    current_actions = current_scope_map.actions
 
     if remove_repository:
         validated, removed_actions = _parse_actions_from_repositories(remove_repository)

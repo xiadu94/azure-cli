@@ -210,7 +210,8 @@ def _get_token_with_username_and_password(login_server,
                                           artifact_repository=None,
                                           permission=None,
                                           is_diagnostics_context=False):
-    """Decides and obtains credentials for a registry using username and password. To be used for scoped access credentials.
+    """Decides and obtains credentials for a registry using username and password.
+       To be used for scoped access credentials.
     :param str login_server: The registry login server URL to log in to
     :param bool only_refresh_token: Whether to ask for only refresh token, or for both refresh and access tokens
     :param str repository: Repository for which the access token is requested

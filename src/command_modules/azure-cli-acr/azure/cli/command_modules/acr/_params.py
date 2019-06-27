@@ -233,18 +233,17 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
 
     with self.argument_context('acr scope-map') as c:
         c.argument('registry_name', options_list=['--registryName', '-r'])
-        c.argument('description', options_list=['--description'], help='Description for the scope map. Max of 140 characters.', required=False)
-        c.argument('add_repository', nargs='+', options_list=['--add'], help='Repositories to be added. Add tuples (repository;action1,action2,...) separated by space.', required=False)
-        c.argument('remove_repository', nargs='+', options_list=['--remove'], help='Repositories to be removed. Add tuples (repository;action1,action2,...) separated by space.', required=False)
-        c.argument('reset_map', options_list=['--reset'], help='Flag indicating whether scope map should be reset (erase all configurations)', action='store_true', required=False)
-        c.argument('scope_map_name', options_list=['--name', '-n'], help='The name of the target scope map.', required=True)
+        c.argument('description', options_list=['--description'], help='Description for the scope map. Max of 255 characters.', required=False)
+        c.argument('add_repository', options_list=['--add'], help='Repositories to be added. Add one tuple (repository;action1,action2,...) per flag. Allowed actions are read, write, contentRead, contentWrite.', action='append', required=False)
+        c.argument('remove_repository', options_list=['--remove'], help='Repositories to be removed. Add one tuple (repository;action1,action2,...) per flag.', action='append', required=False)
+        c.argument('scope_map_name', options_list=['--name', '-n'], help='The name of the scope map.', required=True)
 
     with self.argument_context('acr scope-map create') as c:
-        c.argument('add_repository', nargs='+', options_list=['--add'], help='Repositories to be added. Add tuples (repository;action1,action2,...) separated by space.', required=True)
+        c.argument('add_repository', options_list=['--add'], help='Repositories to be added. Add one tuple (repository;action1,action2,...) per flag. Allowed actions are read, write, contentRead, contentWrite.', action='append', required=True)
 
     with self.argument_context('acr token') as c:
         c.argument('registry_name', options_list=['--registryName', '-r'])
-        c.argument('token_name', options_list=['--name', '-n'], help='The name of the target token.', required=True)
+        c.argument('token_name', options_list=['--name', '-n'], help='The name of the token.', required=True)
         c.argument('scope_map_name', options_list=['--scope-map'], help='The name of the scope map associated with the token', required=False)
         c.argument('status', options_list=['--status'], help='The status of the token. Allowed values are "enabled" or "disabled".', required=False)
 
@@ -257,7 +256,7 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
     with self.argument_context('acr token credential generate') as c:
         c.argument('password1', options_list=['--password1'], help='Flag indicating if password1 should be generated.', action='store_true', required=False)
         c.argument('password2', options_list=['--password2'], help='Flag indicating if password2 should be generated.', action='store_true', required=False)
-        c.argument('expiry', options_list=['--expiry'], help='Finer grain of expiry time if \'--months\' is insufficient, e.g. \'2220-12-31T11:59:59+00:00\' or \'2299-12-31\'', required=False)
+        c.argument('expiry', options_list=['--expiry'], help='Expiry date for the password(s), e.g., \'2220-12-31T11:59:59+00:00\' or \'2299-12-31\'. Finer grain of expiry time if \'--months\' is insufficient.', required=False)
         c.argument('months', options_list=['--months'], help='Number of months for which the credentials will be valid.', type=int, required=False)
 
     with self.argument_context('acr token credential add-certificate') as c:

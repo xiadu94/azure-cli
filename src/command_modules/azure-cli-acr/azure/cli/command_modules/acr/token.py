@@ -171,6 +171,8 @@ def acr_token_credential_delete(cmd,
                                 password2=False,
                                 resource_group_name=None):
 
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
+
     if (certificate1 or certificate2 or password1 or password2) is False:
         raise CLIError("Nothing to delete")
 
@@ -228,6 +230,8 @@ def acr_token_credential_add_certificate(cmd,
                                          key_vault=None,
                                          create_certificate=False,
                                          resource_group_name=None):
+
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
 
     token = acr_token_show(cmd,
                            client,
