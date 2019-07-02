@@ -73,6 +73,7 @@ def acr_scope_map_update(cmd,
                          resource_group_name=None,
                          description=None):
 
+    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
     current_scope_map = acr_scope_map_show(cmd, client, registry_name, scope_map_name, resource_group_name)
     current_actions = current_scope_map.actions
 
@@ -97,8 +98,6 @@ def acr_scope_map_update(cmd,
         for action in added_actions:
             lower_action_to_action[action.lower()] = action
         current_actions = [lower_action_to_action[action] for action in lower_action_to_action]
-
-    resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
 
     return client.update(
         resource_group_name,
