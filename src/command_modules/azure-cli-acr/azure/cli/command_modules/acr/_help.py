@@ -886,7 +886,7 @@ short-summary: Create a scope map for an Azure Container Registry.
 examples:
   - name: Create a scope map that allows write and contentRead actions for `hello-world` repository, and read action for `hello-world-again`.
     text: >
-        az acr scope-map create -r MyRegistry -n MyScopeMap --add hello-world;write,contentRead hello-world-again;read --description "Sample scope map."
+        az acr scope-map create -n MyScopeMap -r MyRegistry --add hello-world write contentRead --add hello-world-again read --description "Sample scope map."
 """
 
 helps['acr scope-map delete'] = """
@@ -900,11 +900,11 @@ examples:
 
 helps['acr scope-map update'] = """
 type: command
-short-summary: Update a scope map under an Azure Container Registry, appending/removing specified actions. If flag "--reset" is given, running this command will override the current scope map with given description/actions.
+short-summary: Update a scope map under an Azure Container Registry, appending/removing specified actions.
 examples:
-  - name: Update the scope map 'MyScopeMap' replacing old actions with 'repositories/hello-world/write' and 'repositories/hello-world/read'.
+  - name: Update the scope map 'MyScopeMap' removing read and contentRead actions for `hello-world` repository, and write action for `hello-world-again`.
     text: >
-        az acr scope-map update -r MyRegistry -n MyScopeMap --add hello-world;write,read --reset
+        az acr scope-map update -n MyScopeMap -r MyRegistry --remove hello-world read contentRead --remove hello-world-again write
 """
 
 helps['acr scope-map show'] = """
@@ -913,7 +913,7 @@ short-summary: Show details and attributes for a scope map under an Azure Contai
 examples:
   - name: Get information for the scope map 'MyScopeMap'.
     text: >
-        az acr scope-map show -r MyRegistry -n MyScopeMap
+        az acr scope-map show -n MyScopeMap -r MyRegistry
 """
 
 helps['acr scope-map list'] = """
@@ -936,7 +936,7 @@ short-summary: Create a token for an Azure Container Registry.
 examples:
   - name: Create a token associated to the scope map 'MyScopeMap', in 'disabled' status.
     text: >
-        az acr token create -r MyRegistry -n MyToken --scope-map MyScopeMap --status disabled
+        az acr token create -n MyToken -r MyRegistry --scope-map MyScopeMap --status disabled
 """
 
 helps['acr token delete'] = """
@@ -945,7 +945,7 @@ short-summary: Delete a token under an Azure Container Registry.
 examples:
   - name: Delete the token 'MyToken'.
     text: >
-        az acr token delete -r MyRegistry -n MyToken
+        az acr token delete -n MyToken -r MyRegistry
 """
 
 helps['acr token update'] = """
@@ -954,7 +954,7 @@ short-summary: Update a token under an Azure Container Registry, replacing the s
 examples:
   - name: Update the token 'MyToken', making it associated with the scope map 'MyNewScopeMap'.
     text: >
-        az acr token update -r MyRegistry -n MyToken --scope-map MyNewScopeMap
+        az acr token update -n MyToken -r MyRegistry --scope-map MyNewScopeMap
 """
 
 helps['acr token show'] = """
@@ -963,7 +963,7 @@ short-summary: Show details and attributes for a token under an Azure Container 
 examples:
   - name: Get information for the token 'MyToken'.
     text: >
-        az acr token show -r MyRegistry -n MyToken
+        az acr token show -n MyToken -r MyRegistry
 """
 
 helps['acr token list'] = """
@@ -985,7 +985,7 @@ type: command
 short-summary: Generate both passwords for a token under an Azure Container Registry, unless one password is specified. Replaces old values if they already exists. If expiry is not specified, it will be defaulted to the max value "9999-12-31T23:59:59.9999+00:00".
 examples:
   - name: Generate password1 for the token 'MyToken', with expiration for 2 years.
-    text: az acr token credential generate -r MyRegistry -n myToken --password1 --months 24
+    text: az acr token credential generate -n MyToken -r MyRegistry --password1 --months 24
 """
 
 helps['acr token credential add-certificate'] = """
@@ -993,7 +993,9 @@ type: command
 short-summary: Add a certificate in a PEM format for a token under an Azure Container Registry. If target certificate already exists, it will be replaced with the new one.
 examples:
   - name: Add certificate1 for the token 'MyToken'.
-    text: az acr token credential add-certificate -r MyRegistry -n MyToken --cert1 C:\\myCertificates\\certificate.pem
+    text: az acr token credential add-certificate -n MyToken -r MyRegistry --target-cert certificate1 --certificate C:\\myCertificates\\certificate.pem
+  - name: Create a self-signed certificate at the key vault 'MyKeyVault' and add it to the token 'MyToken'.
+    text: az acr token credential add-certificate -n MyToken -r MyRegistry --target-cert certificate1 --certificate MyNewCert -k MyKeyVault --create-cert
 """
 
 helps['acr token credential delete'] = """
@@ -1001,5 +1003,5 @@ type: command
 short-summary: Delete a token credential. To be used upon expiration, loss or leak of information.
 examples:
   - name: Delete both passwords for the token 'MyToken'.
-    text: az acr token credential delete -r MyRegistry -n MyToken --password1 --password2
+    text: az acr token credential delete -n MyToken -r MyRegistry --password1 --password2
 """

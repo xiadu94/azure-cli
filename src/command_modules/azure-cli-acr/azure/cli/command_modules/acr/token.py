@@ -360,7 +360,7 @@ def _handle_add_certificate(cli_ctx, token, target_certificate, key_vault, certi
         encoded_cert = _handle_key_vault_certificate(cli_ctx, key_vault, certificate, create_certificate)
     else:
         if create_certificate:
-            raise CLIError('A certificate can only be created for a target keyvault')
+            raise CLIError('A certificate can only be created for a target key vault')
         encoded_cert = _handle_local_certificate(certificate)
 
     certificates_dict[target_certificate] = encoded_cert

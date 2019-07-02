@@ -3,23 +3,19 @@
 # Licensed under the MIT License. See License.txt in the project root for license information.
 # --------------------------------------------------------------------------------------------
 
-from azure.cli.core.util import CLIError
 from ._utils import get_resource_group_name_by_registry_name
 
 
 def _parse_actions_from_repositories(allow_or_remove_repository):
     actions = []
 
-    allow_or_remove_repository.sort()
     for rule in allow_or_remove_repository:
-        splitted = rule.split(';', 1)
-        if len(splitted) != 2:
-            return False, rule
-        repository, repository_actions = splitted[0], splitted[1].split(',')
-        for action in repository_actions:
+        repository = rule[0]
+        for i in range(1, len(rule)):
+            action = rule[i]
             actions.append("repositories/" + repository + "/" + action)
 
-    return True, actions
+    return actions
 
 
 def acr_scope_map_create(cmd,
@@ -30,9 +26,7 @@ def acr_scope_map_create(cmd,
                          resource_group_name=None,
                          description=None):
 
-    validated, actions = _parse_actions_from_repositories(add_repository)
-    if not validated:
-        raise CLIError("Rule {} has invalid syntax.".format(actions))
+    actions = _parse_actions_from_repositories(add_repository)
 
     resource_group_name = get_resource_group_name_by_registry_name(cmd.cli_ctx, registry_name, resource_group_name)
 
@@ -78,9 +72,7 @@ def acr_scope_map_update(cmd,
     current_actions = current_scope_map.actions
 
     if remove_repository:
-        validated, removed_actions = _parse_actions_from_repositories(remove_repository)
-        if not validated:
-            raise CLIError("Rule {} has invalid syntax.".format(removed_actions))
+        removed_actions = _parse_actions_from_repositories(remove_repository)
         # We have to treat actions case-insensitively but list them case-sensitively
         lower_current_actions = set([action.lower() for action in current_actions])
         lower_removed_actions = set([action.lower() for action in removed_actions])
@@ -88,9 +80,7 @@ def acr_scope_map_update(cmd,
                            if action.lower() in lower_current_actions - lower_removed_actions]
 
     if add_repository:
-        validated, added_actions = _parse_actions_from_repositories(add_repository)
-        if not validated:
-            raise CLIError("Rule {} has invalid syntax.".format(added_actions))
+        added_actions = _parse_actions_from_repositories(add_repository)
         # We have to avoid duplicates and give preference to user input casing
         lower_action_to_action = {}
         for action in current_actions:
