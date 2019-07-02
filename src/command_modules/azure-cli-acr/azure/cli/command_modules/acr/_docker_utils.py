@@ -35,7 +35,12 @@ logger = get_logger(__name__)
 
 EMPTY_GUID = '00000000-0000-0000-0000-000000000000'
 ALLOWED_HTTP_METHOD = ['get', 'patch', 'put', 'delete']
-ACCESS_TOKEN_PERMISSION = ['pull', 'push', 'delete', 'push,pull', 'delete,pull']
+REPOSITORY_ACCESS_TOKEN_PERMISSION = [
+    'metadataRead', 'metadataWrite', 'delete', 'metadataWrite,metadataRead', 'delete,metadataRead'
+]
+HELM_ACCESS_TOKEN_PERMISSION = [
+    'pull', 'push', 'delete', 'push,pull', 'delete,pull'
+]
 
 AAD_TOKEN_BASE_ERROR_MESSAGE = "Unable to get AAD authorization tokens with message"
 ADMIN_USER_BASE_ERROR_MESSAGE = "Unable to get admin user credentials with message"
@@ -53,10 +58,15 @@ def _handle_challenge_phase(login_server,
     if repository and artifact_repository:
         raise ValueError("Only one of repository and artifact_repository can be provided.")
 
-    if (repository or artifact_repository) and permission not in ACCESS_TOKEN_PERMISSION:
+    if repository and permission not in REPOSITORY_ACCESS_TOKEN_PERMISSION:
         raise ValueError(
-            "Permission is required for a repository or artifact_repository. Allowed access token permission: {}"
-            .format(ACCESS_TOKEN_PERMISSION))
+            "Permission is required for a repository. Allowed access token permission: {}"
+            .format(REPOSITORY_ACCESS_TOKEN_PERMISSION))
+
+    if artifact_repository and permission not in HELM_ACCESS_TOKEN_PERMISSION:
+        raise ValueError(
+            "Permission is required for an artifact_repository. Allowed access token permission: {}"
+            .format(HELM_ACCESS_TOKEN_PERMISSION))
 
     login_server = login_server.rstrip('/')
 
@@ -209,6 +219,7 @@ def _get_token_with_username_and_password(login_server,
                                           repository=None,
                                           artifact_repository=None,
                                           permission=None,
+                                          is_login_context=False,
                                           is_diagnostics_context=False):
     """Decides and obtains credentials for a registry using username and password.
        To be used for scoped access credentials.
@@ -218,6 +229,10 @@ def _get_token_with_username_and_password(login_server,
     :param str artifact_repository: Artifact repository for which the access token is requested
     :param str permission: The requested permission on the repository, '*' or 'pull'
     """
+
+    if is_login_context:
+        return username, password
+
     token_params = _handle_challenge_phase(
         login_server, repository, artifact_repository, permission, False, is_diagnostics_context
     )
@@ -273,7 +288,8 @@ def _get_credentials(cmd,  # pylint: disable=too-many-statements
                      only_refresh_token,
                      repository=None,
                      artifact_repository=None,
-                     permission=None):
+                     permission=None,
+                     is_login_context=False):
     """Try to get AAD authorization tokens or admin user credentials.
     :param str registry_name: The name of container registry
     :param str tenant_suffix: The registry login server tenant suffix
@@ -333,7 +349,7 @@ def _get_credentials(cmd,  # pylint: disable=too-many-statements
                 raise CLIError('Please specify both username and password in non-interactive mode.')
 
         username, password = _get_token_with_username_and_password(
-            login_server, username, password, repository, artifact_repository, permission
+            login_server, username, password, repository, artifact_repository, permission, is_login_context
         )
         return login_server, username, password
 
@@ -363,7 +379,7 @@ def _get_credentials(cmd,  # pylint: disable=too-many-statements
         username = prompt('Username: ')
         password = prompt_pass(msg='Password: ')
         username, password = _get_token_with_username_and_password(
-            login_server, username, password, repository, artifact_repository, permission
+            login_server, username, password, repository, artifact_repository, permission, is_login_context
         )
         return login_server, username, password
     except NoTTYException:
@@ -389,7 +405,8 @@ def get_login_credentials(cmd,
                             tenant_suffix,
                             username,
                             password,
-                            only_refresh_token=True)
+                            only_refresh_token=True,
+                            is_login_context=True)
 
 
 def get_access_credentials(cmd,
