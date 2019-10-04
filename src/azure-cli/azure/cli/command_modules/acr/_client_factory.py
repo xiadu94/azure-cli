@@ -6,6 +6,7 @@
 from azure.cli.core.commands.client_factory import get_mgmt_service_client
 
 VERSION_2019_06_01_PREVIEW = "2019-06-01-preview"
+VERSION_2019_05_01_PREVIEW = "2019-05-01-preview"
 
 
 def get_acr_service_client(cli_ctx, api_version=None):
@@ -15,7 +16,7 @@ def get_acr_service_client(cli_ctx, api_version=None):
 
 
 def cf_acr_registries(cli_ctx, *_):
-    return get_acr_service_client(cli_ctx).registries
+    return get_acr_service_client(cli_ctx, VERSION_2019_05_01_PREVIEW).registries
 
 
 def cf_acr_registries_tasks(cli_ctx, *_):
@@ -23,11 +24,11 @@ def cf_acr_registries_tasks(cli_ctx, *_):
 
 
 def cf_acr_replications(cli_ctx, *_):
-    return get_acr_service_client(cli_ctx).replications
+    return get_acr_service_client(cli_ctx, VERSION_2019_05_01_PREVIEW).replications
 
 
 def cf_acr_webhooks(cli_ctx, *_):
-    return get_acr_service_client(cli_ctx).webhooks
+    return get_acr_service_client(cli_ctx, VERSION_2019_05_01_PREVIEW).webhooks
 
 
 def cf_acr_tasks(cli_ctx, *_):
